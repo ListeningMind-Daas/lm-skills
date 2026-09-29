@@ -1,0 +1,26 @@
+[
+ {
+  "note": "합성 — 명세(UsageSummaryResponse)의 필드 모양만 따른 값. 실측 아님",
+  "body": {
+   "user_type": "data",
+   "from": "2026-09-01",
+   "to": "2026-09-29",
+   "total_calls": 42,
+   "error_count": 1,
+   "error_rate": 2.38,
+   "total_credits": 6150,
+   "endpoints": [
+    {
+     "endpoint": "/keyword_info",
+     "calls": 20
+    },
+    {
+     "endpoint": "/cluster_finder",
+     "calls": 6
+    }
+   ],
+   "platforms": [],
+   "timeseries": []
+  }
+ }
+]

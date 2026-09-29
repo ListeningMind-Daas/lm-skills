@@ -1,0 +1,182 @@
+{
+ "tool": "lm_keyword_info",
+ "args": {
+  "keywords": [
+   "선스틱",
+   "썬크림",
+   "무기자차 선크림",
+   "선크림",
+   "톤업 선크림",
+   "선 크림"
+  ],
+  "gl": "kr",
+  "data_type": "ads_metrics"
+ },
+ "note": "실측 응답 원문(2026-09-28 조회) — used_credits(계정 월간 누적)만 가상값으로 교체 · 6키워드 요청 → 7행: '선 크림' 미반환(서버 흡수) · 톤업/무기자차 썬크림 미요청 동반 · 선/썬 쌍 구글 볼륨 동일",
+ "status": 200,
+ "body": {
+  "result": "OK",
+  "reason": "SUCCESS",
+  "source": "listeningmind-data-api",
+  "version": "0.0.60",
+  "user_type": "data",
+  "request_at": "2026-09-28T06:23:03.806Z",
+  "request_detail": {
+   "keywords": [
+    "선스틱",
+    "썬크림",
+    "무기자차 선크림",
+    "선크림",
+    "톤업 선크림",
+    "선 크림"
+   ],
+   "gl": "kr",
+   "data_type": "ads_metrics"
+  },
+  "cost_detail": {
+   "input_cost": 1,
+   "input_count": 6,
+   "input_total_cost": 6,
+   "output_cost": 0,
+   "output_count": 7,
+   "output_total_cost": 0,
+   "total_cost": 6
+  },
+  "used_credits": 184000,
+  "data": [
+   {
+    "keyword": "썬크림",
+    "ads_metrics": {
+     "competition": "HIGH",
+     "competition_index": 93,
+     "cpc": 1.0,
+     "low_bid_micros": 216899,
+     "high_bid_micros": 2364453,
+     "volume_avg": 68973,
+     "volume_total": 583810,
+     "volume_trend": -0.38,
+     "gg_volume_avg": 27466,
+     "gg_volume_total": 219000,
+     "gg_volume_trend": -0.32,
+     "nv_volume_avg": 41506,
+     "nv_volume_total": 364810,
+     "nv_volume_trend": -0.41
+    }
+   },
+   {
+    "keyword": "선크림",
+    "ads_metrics": {
+     "competition": "HIGH",
+     "competition_index": 93,
+     "cpc": 1.0,
+     "low_bid_micros": 216899,
+     "high_bid_micros": 2364453,
+     "volume_avg": 65186,
+     "volume_total": 557310,
+     "volume_trend": -0.36,
+     "gg_volume_avg": 27466,
+     "gg_volume_total": 219000,
+     "gg_volume_trend": -0.32,
+     "nv_volume_avg": 37720,
+     "nv_volume_total": 338310,
+     "nv_volume_trend": -0.38
+    }
+   },
+   {
+    "keyword": "톤업 선크림",
+    "ads_metrics": {
+     "competition": "HIGH",
+     "competition_index": 91,
+     "cpc": 0.52,
+     "low_bid_micros": 137384,
+     "high_bid_micros": 561080,
+     "volume_avg": 24120,
+     "volume_total": 279780,
+     "volume_trend": -0.35,
+     "gg_volume_avg": 9300,
+     "gg_volume_total": 109800,
+     "gg_volume_trend": -0.33,
+     "nv_volume_avg": 14820,
+     "nv_volume_total": 169980,
+     "nv_volume_trend": -0.36
+    }
+   },
+   {
+    "keyword": "톤업 썬크림",
+    "ads_metrics": {
+     "competition": "HIGH",
+     "competition_index": 91,
+     "cpc": 0.52,
+     "low_bid_micros": 137384,
+     "high_bid_micros": 561080,
+     "volume_avg": 11846,
+     "volume_total": 142940,
+     "volume_trend": -0.35,
+     "gg_volume_avg": 9300,
+     "gg_volume_total": 109800,
+     "gg_volume_trend": -0.33,
+     "nv_volume_avg": 2546,
+     "nv_volume_total": 33140,
+     "nv_volume_trend": -0.44
+    }
+   },
+   {
+    "keyword": "선스틱",
+    "ads_metrics": {
+     "competition": "HIGH",
+     "competition_index": 96,
+     "cpc": 0.5,
+     "low_bid_micros": 161735,
+     "high_bid_micros": 1032835,
+     "volume_avg": 27550,
+     "volume_total": 212700,
+     "volume_trend": -0.47,
+     "gg_volume_avg": 8100,
+     "gg_volume_total": 53300,
+     "gg_volume_trend": -0.18,
+     "nv_volume_avg": 19450,
+     "nv_volume_total": 159400,
+     "nv_volume_trend": -0.56
+    }
+   },
+   {
+    "keyword": "무기자차 선크림",
+    "ads_metrics": {
+     "competition": "HIGH",
+     "competition_index": 83,
+     "cpc": 0.33,
+     "low_bid_micros": 105742,
+     "high_bid_micros": 528355,
+     "volume_avg": 28773,
+     "volume_total": 241160,
+     "volume_trend": -0.33,
+     "gg_volume_avg": 6200,
+     "gg_volume_total": 54200,
+     "gg_volume_trend": -0.33,
+     "nv_volume_avg": 22573,
+     "nv_volume_total": 186960,
+     "nv_volume_trend": -0.33
+    }
+   },
+   {
+    "keyword": "무기자차 썬크림",
+    "ads_metrics": {
+     "competition": "HIGH",
+     "competition_index": 83,
+     "cpc": 0.33,
+     "low_bid_micros": 105742,
+     "high_bid_micros": 528355,
+     "volume_avg": 7036,
+     "volume_total": 61650,
+     "volume_trend": -0.34,
+     "gg_volume_avg": 6200,
+     "gg_volume_total": 54200,
+     "gg_volume_trend": -0.33,
+     "nv_volume_avg": 836,
+     "nv_volume_total": 7450,
+     "nv_volume_trend": -0.43
+    }
+   }
+  ]
+ }
+}

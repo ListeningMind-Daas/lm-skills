@@ -1,0 +1,51 @@
+{
+ "tool": "lm_path_finder",
+ "args": {
+  "keyword": "선크림",
+  "gl": "kr",
+  "limit": 3
+ },
+ "note": "실측 응답 원문(2026-09-28 조회) — used_credits(계정 월간 누적)만 가상값으로 교체 · limit 3 → 경로 3 · 고유 키워드 7",
+ "status": 200,
+ "body": {
+  "result": "OK",
+  "reason": "SUCCESS",
+  "source": "listeningmind-data-api",
+  "version": "0.0.60",
+  "user_type": "data",
+  "request_at": "2026-09-28T06:24:27.275Z",
+  "request_detail": {
+   "keyword": "선크림",
+   "gl": "kr",
+   "time_point": "curr",
+   "limit": 3
+  },
+  "cost_detail": {
+   "input_cost": 50,
+   "input_count": 1,
+   "input_total_cost": 50,
+   "output_cost": 40,
+   "output_count": 7,
+   "output_total_cost": 280,
+   "total_cost": 330
+  },
+  "used_credits": 184000,
+  "data": [
+   [
+    "썬크림",
+    "선크림 바르지마라",
+    "선크림 바르는법"
+   ],
+   [
+    "썬크림",
+    "선크림 추천",
+    "선크림 추천 디시"
+   ],
+   [
+    "어바웃미",
+    "어바웃미 선크림",
+    "썬크림"
+   ]
+  ]
+ }
+}

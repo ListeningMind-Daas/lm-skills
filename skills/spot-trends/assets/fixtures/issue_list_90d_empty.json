@@ -1,0 +1,28 @@
+{
+ "result": "OK",
+ "reason": "SUCCESS",
+ "source": "listeningmind-data-api",
+ "version": "0.0.60",
+ "user_type": "data",
+ "request_at": "2026-09-29T00:00:00.000Z",
+ "request_detail": {
+  "keyword": "캠핑의자",
+  "gl": "kr",
+  "period_days": 90,
+  "limit": 50,
+  "sort": "score",
+  "order": "desc"
+ },
+ "cost_detail": {
+  "input_cost": 50,
+  "input_count": 0,
+  "input_total_cost": 0,
+  "output_cost": 2,
+  "output_count": 0,
+  "output_total_cost": 0,
+  "total_cost": 0
+ },
+ "used_credits": 0,
+ "total": 0,
+ "data": []
+}

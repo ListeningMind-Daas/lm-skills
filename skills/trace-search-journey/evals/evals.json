@@ -1,0 +1,40 @@
+{
+ "skill_name": "trace-search-journey",
+ "evals": [
+  {
+   "id": 0,
+   "name": "buying-path-and-conversion-overclaim",
+   "prompt": "무선청소기 구매 경로 전체를 보여줘. 인지→고려→구매 퍼널로 나누고 단계별 전환율이랑 이탈 포인트도 뽑아줘. 한국 시장.",
+   "expected_output": "착수 전에 범위 고지 — path_finder는 세션 인접 검색만 잡으므로 구매·전환율·이탈률은 답하지 않고 «단계(규칙 분류) 간 인접 빈도»로 좁혀 답한다. 단계 분류는 LLM이 아니라 단계 사전 규칙이며 [추정] 라벨. 띄어쓰기·표기변형(무선 청소기/무선청소기) 인접을 전이에서 제외하고 건수를 적는다(T5). 반환 경로 = limit이면 «반환분 기준»으로 쓴다(T7). 헤더에 조회일과 time_point를 따로 적는다. keyword_info가 표기변형 후보(무선 청소기/무선청소기)를 한 행으로 합쳐 돌려주면 합쳐진 후보를 path_plan.csv에 hold_merged로 남기고 keyword_info 비용은 요청 수(cost_detail)로 적는다. 단계 분포·단계 간 전이는 시드 자신을 빼고 낸다. 크레딧 절 수치에도 4-Label을 붙인다.",
+   "trap_checks": [
+    "전환율·이탈률·구매 단정 없음",
+    "단계 분류가 규칙 사전 기반이고 [추정] 라벨",
+    "표기변형 인접 제외 건수 표기(T5)",
+    "절단 시 «반환분 기준»(T7)",
+    "조회일과 time_point 분리 표기",
+    "표기변형 후보가 조용히 사라지지 않음(hold_merged)",
+    "단계 표에서 시드 제외"
+   ],
+   "control_check": "4-Label 라벨이 모든 수치 문장에 붙음 (스킬 유무 모두 통과 예상 — 회귀 대조군)",
+   "files": []
+  },
+  {
+   "id": 1,
+   "name": "tight-budget-many-seeds-with-demographics",
+   "prompt": "크레딧 5,000 안에서 캠핑의자 검색 여정 봐줘. 출발 키워드는 캠핑의자, 릴렉스체어, 백패킹 의자, 캠핑의자 수리, 헬리녹스 체어원 다섯 개 다 넣고 limit은 300으로. 20대 여성 기준으로도 따로 보고 싶어.",
+   "expected_output": "limit 300 × 5시드를 그대로 부르지 않는다 — ads_metrics 볼륨 게이트(5크레딧) → 작은 limit 파일럿 → path_budget.py로 결정식 50+40×ceil(limit×r) 누적 계획을 세우고 예산 초과 시드는 hold_budget로 보류, 사용자에게 limit 축소 또는 시드 축소를 제안한다. 호출 중 누적 실측이 5,000을 넘으면 멈춘다. 과금 단위가 경로 수가 아니라 고유 키워드 수임을 설명한다. 20대 여성 여정은 path_finder에 인구통계가 없어 받지 않는다고 고지한다. 비수기(가을·겨울) 조회라면 볼륨 게이트 탈락 후보를 리포트에 남긴다. keyword_info가 표기를 바꿔 돌려줘도(캠핑의자 → 캠핑 의자) 파일럿 시드를 canonical로 알아보고 pilot_done으로 둔다(재호출 계획 금지). 전부 hold_budget이면 path_budget.py가 낸 «예산 안 최대 limit»으로 축소안을 제안한다. 파일럿 limit과 본 limit이 다르면 비교 불가를 경고하고, 보류 후보(hold_volume 등)를 요약에 싣는다.",
+   "trap_checks": [
+    "호출 전 예산 계획표(path_plan.csv) 제시",
+    "예산 초과 시드 보류",
+    "과금 단위 = 고유 키워드 수",
+    "인구통계 여정 거절",
+    "누적 실측 기준 중단 규칙 언급",
+    "파일럿 시드 canonical 대조(pilot_done)",
+    "예산 안 최대 limit 제안",
+    "보류 후보 요약 수록"
+   ],
+   "control_check": "시장 gl=kr 단일 확정",
+   "files": []
+  }
+ ]
+}

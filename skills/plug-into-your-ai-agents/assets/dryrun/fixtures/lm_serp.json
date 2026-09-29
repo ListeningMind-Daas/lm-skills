@@ -1,0 +1,100 @@
+[
+ {
+  "note": "합성 — 실측 SERP 응답(2026-09-16)의 최상위·블록 키 구조를 따르고 내용은 합성. cost_detail 모양(30×1 · 출력 무과금)은 실측과 같다",
+  "body": {
+   "result": "OK",
+   "reason": "SUCCESS",
+   "source": "listeningmind-data-api",
+   "version": "0.0.60",
+   "user_type": "data",
+   "request_at": "2026-09-29T00:00:00.000Z",
+   "used_credits": 184965,
+   "request_detail": {
+    "keyword": "선크림",
+    "gl": "kr",
+    "num": 20,
+    "device": "mobile"
+   },
+   "cost_detail": {
+    "input_cost": 30,
+    "input_count": 1,
+    "input_total_cost": 30,
+    "output_cost": 0,
+    "output_count": 1,
+    "output_total_cost": 0,
+    "total_cost": 30
+   },
+   "collected_at": "2026-09-20T03:00:00.000Z",
+   "data": [
+    {
+     "sequence": 1,
+     "type": "ai_overview",
+     "ved": {},
+     "text_blocks": [
+      {
+       "type": "paragraph",
+       "snippet": "(합성) ai_overview 블록 문장"
+      }
+     ],
+     "references": [
+      {
+       "title": "(합성) 출처",
+       "link": "https://example.com/1"
+      }
+     ]
+    },
+    {
+     "sequence": 2,
+     "type": "organic_results",
+     "ved": {},
+     "text_blocks": [
+      {
+       "type": "paragraph",
+       "snippet": "(합성) organic_results 블록 문장"
+      }
+     ],
+     "references": [
+      {
+       "title": "(합성) 출처",
+       "link": "https://example.com/2"
+      }
+     ]
+    },
+    {
+     "sequence": 3,
+     "type": "people_also_ask_for",
+     "ved": {},
+     "text_blocks": [
+      {
+       "type": "paragraph",
+       "snippet": "(합성) people_also_ask_for 블록 문장"
+      }
+     ],
+     "references": [
+      {
+       "title": "(합성) 출처",
+       "link": "https://example.com/3"
+      }
+     ]
+    },
+    {
+     "sequence": 4,
+     "type": "related_searches",
+     "ved": {},
+     "text_blocks": [
+      {
+       "type": "paragraph",
+       "snippet": "(합성) related_searches 블록 문장"
+      }
+     ],
+     "references": [
+      {
+       "title": "(합성) 출처",
+       "link": "https://example.com/4"
+      }
+     ]
+    }
+   ]
+  }
+ }
+]

@@ -1,0 +1,44 @@
+[
+ {
+  "note": "합성 — 같은 요청의 cluster_finder 실측 응답(2026-09-28)에서 노드를 옮겨 만든 모양. 단가는 명세값(30 + 2×반환)이며 실측 대조 전이다",
+  "body": {
+   "result": "OK",
+   "reason": "SUCCESS",
+   "source": "listeningmind-data-api",
+   "version": "0.0.60",
+   "user_type": "data",
+   "request_at": "2026-09-29T00:00:00.000Z",
+   "used_credits": 184965,
+   "request_detail": {
+    "keyword": "선크림",
+    "gl": "kr",
+    "time_point": "curr",
+    "limit": 10,
+    "hop": 1,
+    "orientation": "UNDIRECTED"
+   },
+   "cost_detail": {
+    "input_cost": 30,
+    "input_count": 1,
+    "input_total_cost": 30,
+    "output_cost": 2,
+    "output_count": 11,
+    "output_total_cost": 22,
+    "total_cost": 52
+   },
+   "data": [
+    "선댄스 선크림",
+    "선크림 매일 바르면",
+    "선크림 바르지마라",
+    "선크림 순위",
+    "선크림 썬크림",
+    "선크림 종류",
+    "선크림 추천",
+    "셀 티아라 선 에센스",
+    "썬크림",
+    "자외선 지수 몇 부터 선크림",
+    "티니핑 선크림"
+   ]
+  }
+ }
+]

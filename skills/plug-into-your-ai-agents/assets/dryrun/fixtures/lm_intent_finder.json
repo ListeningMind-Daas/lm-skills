@@ -1,0 +1,33 @@
+[
+ {
+  "status": 200,
+  "body": {
+   "result": "OK",
+   "data": [
+    "선크림 추천",
+    "썬크림 추천",
+    "무기자차 선크림",
+    "톤업 선크림",
+    "선크림 순위",
+    "선스틱 추천",
+    "민감성 선크림",
+    "지성 선크림",
+    "선크림 바르는 순서",
+    "워터프루프 선크림"
+   ],
+   "cost_detail": {
+    "total_cost": 50
+   },
+   "used_credits": 184265,
+   "request_detail": {
+    "keywords": [
+     "선크림"
+    ],
+    "gl": "kr",
+    "limit": 10,
+    "volume_threshold": 100
+   }
+  },
+  "note": "합성 — limit 10에 반환 10(절단)"
+ }
+]

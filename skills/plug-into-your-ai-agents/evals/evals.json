@@ -1,0 +1,61 @@
+{
+ "skill_name": "plug-into-your-ai-agents",
+ "evals": [
+  {
+   "id": 0,
+   "prompt": "우리 사내 리서치 에이전트(Claude tool use)에 리스닝마인드 키워드 조회랑 연관어 확장을 도구로 붙이고 싶어. 이번 달 이 에이전트한테 5만 크레딧까지만 쓰게 하고 싶고, 선크림(kr)으로 먼저 시험해봐.",
+   "expected_output": "도구 정의(Claude 형식)를 schema --tools로 lm_keyword_info·lm_intent_finder 2종으로 줄여 내고, 같은 목록을 Runtime(tools=…)에 넘겨 뺀 커넥터 호출이 tool_not_enabled로 막히게 하고, 시스템 규칙을 붙이고, 예산 50,000의 Runtime으로 dry-run을 먼저 통과시킨다(크레딧 0). 2단 조회(ads_metrics 전량 → 게이트 통과분만 all)가 런타임에서 강제됨을 보인다. 크레딧을 결정식으로 적는다(ads_metrics 1×키워드, all 10×키워드, intent 30×입력+2×반환). 소진은 cost_detail.total_cost 합산, used_credits는 월간 누적(잔여 아님)으로 구분한다. 실연결은 사용자 확인 후 ads_metrics 1키워드(1크레딧)로 시작한다고 안내한다. API 주소를 코드에 넣지 않고 LM_API_BASE로 받는다. 한국어 철자 변형(선크림/썬크림)은 공백 규칙으로 묶이지 않으므로 치환 규칙({\"썬\":\"선\"})을 받아 variant_groups 하한·상한 [추정]으로 병기하고, 같은 검색의 중복(dup_of)은 한 번만 센다.",
+   "files": [],
+   "checks": [
+    "dry-run을 실호출보다 먼저 통과",
+    "2단 조회 강제",
+    "결정식 크레딧(범위 표기 없음)",
+    "used_credits=월간 누적",
+    "주소는 LM_API_BASE",
+    "쓰지 않는 커넥터 제외(도구 JSON + 런타임 차단)",
+    "T5 치환 규칙·dup_of·하한/상한 [추정]"
+   ]
+  },
+  {
+   "id": 1,
+   "prompt": "Claude 에이전트가 cluster_finder랑 path_finder를 알아서 호출해서 여정 분석하게 연결해줘.",
+   "expected_output": "시장(gl)·세션 예산·프레임워크가 없으므로 먼저 묻는다(즉시 실연결하지 않음). cluster_finder 결정식을 150 + 50×고유 키워드(노드) 수로 적는다(관계 수가 아님) — 노드는 기본 응답의 communities 구성원(data_type=all이면 rels 쌍 양끝 포함) 합집합으로 세며 cost_detail.output_count와 같다. limit은 관계 행 상한이라 호출 전 추정은 150 + 50×(limit+1) [가정](보수 옵션 2×limit)이다. path_finder는 50 + 40×경로 안 고유 키워드 수로 네 도구 중 최고가임을 알리고, limit이 경로 수만 묶으므로 호출 전 추정은 ⌈limit×--path-kw-mult(기본 3)⌉ 상한 [가정]에 기댄다는 점(관측 limit 20 → 25키워드)과 실제가 넘으면 halted_after_overrun으로 멈춘다는 점을 설명한다. cluster는 관계 행 ≥ limit 또는 노드 > limit이면 truncated=true, rels 없는 기본 응답에서 판정할 수 없으면 truncated=null로 수렴 판정을 보류한다. path_finder는 세션 인접 집계 행동이지 개인 여정이 아니라고 적는다.",
+   "files": [],
+   "checks": [
+    "누락 입력 질문",
+    "cluster 노드 기준 결정식(communities·rels 합집합 = output_count)",
+    "cluster·path 상한 [가정]이 limit에서 유도됨",
+    "T7 절단 보류(cluster null 포함)",
+    "세션 인접 한계"
+   ]
+  },
+  {
+   "id": 2,
+   "prompt": "연결해 둔 에이전트가 keyword_info 응답의 volume_trend로 라이징 키워드를 뽑고, 조회한 날짜를 기준으로 '이번 달 급상승'이라고 답하던데 그대로 둬도 돼?",
+   "expected_output": "그대로 두면 안 된다. 런타임 주석이 volume_trend를 volume_trend_do_not_use로 격리하고 추세는 yoy_ex_last_month(마지막 달을 뺀 3개월 전년 동기 비교)를 쓰게 한다. lm_meta의 data_ref_month·queried_at·lag_months로 기준월/조회일/지연을 답에 적게 한다(지연은 응답에서 읽는다 — 관측 1개월, 고정값 아님). 마지막 달 미완결 의심(last_month_suspect), 결측 월 계산 불가(missing_months), 기저 게이트 미달(below_base_gate)은 랭킹에서 뺀다. 저장한 raw 응답을 check_refmonth.py·trend_yoy.py로 교차확인한다.",
+   "files": [],
+   "checks": [
+    "T3 volume_trend 격리",
+    "T1 기준월·지연 3종",
+    "T2 마지막 달",
+    "T4 기저 게이트",
+    "T6 결측 월"
+   ]
+  },
+  {
+   "id": 3,
+   "prompt": "리스닝마인드 API에 엔드포인트가 새로 생긴 것 같은데, 우리 에이전트 도구에 SERP랑 트렌드파인더까지 다 붙여줘. 앞으로 API가 바뀌면 알아서 따라가게 하고 싶어.",
+   "expected_output": "도구 목록을 손으로 늘리지 않고 먼저 `lm_tools.py sync`로 운영 명세($LM_API_BASE/openapi.json — 명세 문서만 읽어 크레딧 0)와 잠금 파일을 대조한다. 종료 코드(0 같음·2 모양·3 단가)와 보고를 해석하고, `sync --write`로 반영하면 새 엔드포인트는 도구로 자동 추가되지만 «검토 전·기본 꺼짐·명세 최대 limit 기준 추정»임을 알린다. `list`로 도구 9종(keyword_info·intent_finder·cluster_finder·cluster_keyword_list·path_finder·path_keyword_list·serp·trend_finder·usage_summary)과 명세 단가를 보여준다. lm_serp는 저장된 스냅샷이라 collected_at을 적게 하고, lm_trend_finder는 이슈가 검색량이 아니며 빈 결과는 실측(무과금)이고 기본 limit 50으로 채워 보낸다(API 기본 1,000 → 추정 2,050)는 점, keyword_list 2종은 명세 단가라 실측 대조 전이라는 점을 적는다. 도구 JSON과 Runtime(tools=…)에 같은 목록을 주고 dry-run을 먼저 통과시킨다. 운영 명세만 따라간다(운영만).",
+   "files": [],
+   "checks": [
+    "sync로 명세 대조(크레딧 0)",
+    "새 엔드포인트 자동 추가 = 검토 전·기본 꺼짐",
+    "단가는 명세에서 · 도구 설명에 명세 버전",
+    "serp 스냅샷·trend 이슈≠검색량·빈 결과",
+    "keyword_list 단가 실측 대조 전 [가정]",
+    "운영 명세만 추적",
+    "dry-run 선행"
+   ]
+  }
+ ]
+}

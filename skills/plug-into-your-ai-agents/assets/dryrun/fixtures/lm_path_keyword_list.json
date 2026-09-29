@@ -1,0 +1,38 @@
+[
+ {
+  "note": "합성 — 같은 요청의 path_finder 실측 응답(2026-09-28)에서 경로 안 키워드를 옮겨 만든 모양. 단가는 명세값(30 + 2×반환)이며 실측 대조 전이다",
+  "body": {
+   "result": "OK",
+   "reason": "SUCCESS",
+   "source": "listeningmind-data-api",
+   "version": "0.0.60",
+   "user_type": "data",
+   "request_at": "2026-09-29T00:00:00.000Z",
+   "used_credits": 184965,
+   "request_detail": {
+    "keyword": "선크림",
+    "gl": "kr",
+    "time_point": "curr",
+    "limit": 3
+   },
+   "cost_detail": {
+    "input_cost": 30,
+    "input_count": 1,
+    "input_total_cost": 30,
+    "output_cost": 2,
+    "output_count": 7,
+    "output_total_cost": 14,
+    "total_cost": 44
+   },
+   "data": [
+    "선크림 바르는법",
+    "선크림 바르지마라",
+    "선크림 추천",
+    "선크림 추천 디시",
+    "썬크림",
+    "어바웃미",
+    "어바웃미 선크림"
+   ]
+  }
+ }
+]

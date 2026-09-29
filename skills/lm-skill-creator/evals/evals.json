@@ -1,0 +1,19 @@
+{
+ "skill_name": "lm-skill-creator",
+ "evals": [
+  {
+   "id": 0,
+   "name": "new-task-skill-from-utterance",
+   "prompt": "검색 데이터로 카테고리 시즌성 패턴 뽑아주는 스킬 하나 만들어줘. 언제 성수기고 전년 대비 어떤지 보고 싶어.",
+   "expected_output": "시계열을 쓰므로 T1·T2·T3·T4·T6 의무가 박힌 골격이 생성되고, 2단 조회(ads_metrics→all) 예산식이 반영돼야 한다. 감사 P0 0건.",
+   "files": []
+  },
+  {
+   "id": 1,
+   "name": "audit-existing-skill",
+   "prompt": "이 스킬 계약 지키는지 감사해줘. 문제 있으면 등급 나눠서 알려주고.",
+   "expected_output": "P0/P1/P2 분류 + 근거. 정적 감사만으로 '검증됨'이라 하지 않고 selftest·실행 평가를 함께 제안해야 한다.",
+   "files": []
+  }
+ ]
+}

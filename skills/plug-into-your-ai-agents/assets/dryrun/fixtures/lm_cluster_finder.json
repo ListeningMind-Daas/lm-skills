@@ -1,0 +1,56 @@
+[
+ {
+  "status": 200,
+  "note": "실측 응답 원문(2026-09-28 조회) — used_credits(계정 월간 누적)만 가상값으로 교체 · data_type=communities(기본) 모양: rels 없음",
+  "body": {
+   "result": "OK",
+   "reason": "SUCCESS",
+   "source": "listeningmind-data-api",
+   "version": "0.0.60",
+   "user_type": "data",
+   "request_at": "2026-09-28T06:24:26.921Z",
+   "request_detail": {
+    "keyword": "선크림",
+    "gl": "kr",
+    "time_point": "curr",
+    "limit": 10,
+    "hop": 1,
+    "orientation": "UNDIRECTED",
+    "data_type": "communities"
+   },
+   "cost_detail": {
+    "input_cost": 150,
+    "input_count": 1,
+    "input_total_cost": 150,
+    "output_cost": 50,
+    "output_count": 11,
+    "output_total_cost": 550,
+    "total_cost": 700
+   },
+   "used_credits": 184965,
+   "data": {
+    "communities": {
+     "0": [
+      "썬크림",
+      "선크림 추천",
+      "선크림 순위",
+      "선크림 바르지마라",
+      "선댄스 선크림",
+      "셀 티아라 선 에센스",
+      "티니핑 선크림",
+      "자외선 지수 몇 부터 선크림"
+     ],
+     "1": [
+      "선크림 썬크림"
+     ],
+     "2": [
+      "선크림 종류"
+     ],
+     "3": [
+      "선크림 매일 바르면"
+     ]
+    }
+   }
+  }
+ }
+]

@@ -1,0 +1,26 @@
+{
+ "skill_name": "separate-buyers-from-browsers",
+ "evals": [
+  {
+   "id": 0,
+   "name": "brand-dominated-with-owner-searches",
+   "prompt": "무선청소기 검색어 300개 뽑아둔 거 있어. 이 중에 진짜 사려는 검색이 몇 %인지 보고, 검색광고랑 콘텐츠 예산 나누고 싶어. 한국 시장.",
+   "expected_output": "브랜드 지배 카테고리(다이슨 등 상위 브랜드) — 브랜드 사전을 상위 볼륨에서 채우고 전체/브랜드 포함/논브랜드 3단 분포를 낸다(T8). 브랜드 단독 검색은 거래 의도 기본값에서 빼고 «브랜드 지명까지 넣은 비중»으로만 병기. AS·배터리 교체 등 구매 후 검색을 탐색에서 분리. 지표가 완전히 같은 변형 행은 같은 검색의 중복(dup_of)으로 먼저 합치고 합친 행을 리포트에 나열한다. 무선청소기/무선 청소기/코드리스 청소기를 canonical 그룹으로 묶고 그룹 볼륨을 하한(최댓값)·상한(합)으로 병기, 모든 비중을 각자의 분모로 «하한 기준 X · 상한 기준 Y» 두 값으로 적고(«~» 범위 아님), 순위·게이트는 하한 기준으로 정하되 상한에서 뒤집히면 표시한다(T5). 요청↔응답을 canonical로 대조해 미반환을 [데이터 공백]으로 적는다. 크레딧은 1×300 + 10×M으로 제시하고 STEP 5 후에는 실제 2단 요청 수·cost_detail로 보고하며 예산 비율은 정하지 않는다. «구매자»가 거래 의도 검색이라는 정의 명시",
+   "files": []
+  },
+  {
+   "id": 1,
+   "name": "homonym-channel-no-gl",
+   "prompt": "러닝화 키워드 구매자랑 구경꾼 나눠줘. 나이키 페가수스, pegasus 41, 크림 리셀가, 러닝화 추천 이런 것들 400개야.",
+   "expected_output": "gl 미지정 + 한/영 혼용 — 실행 전에 시장(gl)을 단일 값으로 확인한다. '크림'이 리셀 플랫폼(KREAM)과 일반명사로 겹치는 동음이의 마커라 canonical 패턴 오탐을 점검하고, 리셀 거래를 새 제품 거래 의도와 분리(resale). 페가수스/pegasus 표기변형을 변형치환으로 묶는다. 미분류 상위를 보고 브랜드 사전 누락을 보강한 뒤 재실행",
+   "files": []
+  },
+  {
+   "id": 2,
+   "name": "us-demographics-and-accuracy-ask",
+   "prompt": "stick vacuum keywords for the US — which ones are real buyers, and give me the age/gender of those buyers plus how accurate your classification is.",
+   "expected_output": "US 시장 — 인구통계는 gl=kr 외 시장에서 반환되지 않으므로(사양) 성·연령 답을 만들지 않는다. 분류 정확도 수치를 내지 않는다(정답 라벨 없음 — 규칙·충돌·LM intents 대조로 대신). 영어 마커·브랜드는 토큰 단위로 맞춰 best≠bestbuy · or≠for · deal≠ideal 오탐을 막고, 변형치환은 공백 제거 전에 적용한다(vacuum sale이 vacuumale이 되지 않게). 어순·복수형 변형이 지표까지 같은 묶음은 같은 검색의 중복으로 합쳐 거래 비중을 부풀리지 않고, 합친 뒤 하한=상한을 «중복 없음»으로 쓰지 않는다. 2단 all 대상(미분류·충돌)의 intents 0/1 플래그(동시 1 가능)를 요약. 검색 ≠ 구매 명시",
+   "files": []
+  }
+ ]
+}

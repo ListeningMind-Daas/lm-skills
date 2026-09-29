@@ -1,0 +1,42 @@
+{
+ "skill_name": "track-search-share",
+ "evals": [
+  {
+   "id": 0,
+   "name": "true-share-claim-and-brand-only-queries",
+   "prompt": "캡슐 커피머신 시장에서 네스프레소 진짜 시장 점유율 좀 알려줘. 돌체구스토, 드롱기, 브레빌이랑 비교해서. 한국이야.",
+   "expected_output": "'진짜 시장 점유율'을 검색량 기준 근사로 고쳐 고지. 카테고리 경계(캡슐·원두 포함 여부)를 먼저 확인. '네스프레소' 단독·'네스프레소 캡슐' 같은 품목 미특정·소모품 검색을 분모에서 분리하고 그 볼륨을 따로 보고. nespresso/네스프레소 표기변형 그룹 볼륨을 하한(최댓값)~상한(합)으로 병기하고 점유율도 각자의 분모로 범위 표기, 순위는 하한 기준이며 상한에서 뒤집히면 명시. 모델명(버츄오 등)을 브랜드로 귀속. 논브랜드(커피머신 추천 등) 분리 — sov_pct_*와 sov_pct_branded_only_*를 나란히. 크레딧을 결정식(Σ(30+2×반환)+K+10×K2)으로 먼저 안내. 2단을 진행하면 기준월/조회일/지연 헤더, 마지막 달 제외, 결측 월 계산 불가, 기저 미달 버킷의 점유 변화 미산출, 점유 변화는 대표 행(하한 기준)임을 표기. 같은 검색의 중복(지표·시계열 완전 일치 어순·표기 변형)은 dup_of로 걸러 한 번만 센다. '네스프레소' 단독·비교 검색은 --probe-terms로 1단에 넣어 수집하고, 넣지 않았으면 0이 아니라 «미수집»으로 적는다. 카테고리 단어 없는 모델명(버츄오)은 model_only로 분리 보고. brand_models에만 있는 짧은 브랜드(일리)도 버킷으로 집계(오류 없이). exclude는 '캡슐 호환 커피머신'(머신)을 자르지 않는다. 마지막 달 두 모드 부호가 다르면 «잠정». --requested로 미반환·요청하지 않은 행을 대조하고 과금은 요청 키워드 수로 적는다.",
+   "traps": [
+    "T1",
+    "T2",
+    "T5",
+    "T6",
+    "T8",
+    "판매 점유 단정",
+    "카테고리 밖 브랜드 단독 검색",
+    "T5 같은 검색의 중복",
+    "미수집≠0",
+    "모델명만(품목 미특정)"
+   ],
+   "files": []
+  },
+  {
+   "id": 1,
+   "name": "us-generic-heavy-comparison-queries-no-variants",
+   "prompt": "US stick vacuum share of search — Dyson vs Shark vs Tineco. Did Dyson lose share vs last year? Also break it down by age group.",
+   "expected_output": "gl=us 단일 확정. 변형 목록이 없으므로 브랜드명+카테고리 시드로 intent_finder 1라운드, 반환이 limit에 붙으면 variant_list_truncated=yes와 과소 가능 고지(수렴 판정 보류). 'best stick vacuum' 등 논브랜드 비중이 커서 전체 점유와 브랜드 간 점유가 크게 다름을 명시. 'dyson vs shark' 비교 검색은 균등 분배[가정]하고 분배 볼륨 보고. 전년 동기 3개월 창으로 점유 변화 판정(직전 기간 대비·volume_trend 사용 금지), 창 끝은 기준월−1, 기저 게이트 미달이면 판정 안 함. 연령별 분해는 US에서 demography가 반환되지 않는 사양이며 이 스킬 범위 밖이라고 답함. 미국 응답의 어순·동의어 변형(shark cordless stick vacuum = stick vacuum cordless shark 등 지표 완전 일치)을 같은 검색의 중복으로 걸러 분모 부풀림(실측 8.99M→5.52M)을 막는다. 일반 시드 라운드가 limit에 붙으면 그 라운드가 공급한 브랜드 버킷까지 절단 표시. 'dyson vs shark'는 --probe-terms로 수집해야 보이며 카테고리 단어가 없으면 분모 밖 비교 검색으로 따로 보고. 'dyson v8 handheld vacuum'처럼 카테고리 단어 없는 모델명 검색은 스틱 점유에 넣지 않는다. 지연은 응답에서 읽는다(관측 1개월).",
+   "traps": [
+    "T3",
+    "T4",
+    "T7",
+    "T8",
+    "demography 사양",
+    "변형 미제공",
+    "T5 같은 검색의 중복",
+    "T7 공급 버킷 절단",
+    "모델명만(품목 미특정)"
+   ],
+   "files": []
+  }
+ ]
+}

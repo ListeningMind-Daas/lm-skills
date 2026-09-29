@@ -1,0 +1,95 @@
+{
+ "_comment": "3축 사전 예시 (전동칫솔 KR). 카테고리마다 새로 쓴다. themes 스키마(references/themes-schema.md)를 그대로 쓰되, 테마 이름을 'Pain:' · 'Feature:' · 'Attribute:' 접두어로 시작한다 — voc_axes.py가 접두어로 축을 읽는다. 패턴은 canonical 문자열(공백 제거·소문자·변형치환 적용)에 대해 평가되므로 '충전 안됨'은 '충전안됨'으로 맞춘다. theme_primary는 배열 순서로 정해지므로 Pain을 맨 위에 둔다 — '충전 안됨'은 Feature '충전'에도 걸리기 때문이다. brands는 1차 확장 결과의 상위 볼륨 검색어에서 뽑아 보강할 것(이 예시는 시작점일 뿐이다). v1.2: STEP 0 불편 탐침어(단점)에 맞춰 Pain:단점·불만을 둔다. category_terms를 하나도 포함하지 않는 검색어는 voc_axes.py가 «경계 점검»으로 올리고, exclude(canonical 정규식)에 걸린 인접 카테고리 검색어는 집계에서 뺀다.",
+ "rules": {
+  "변형치환": {
+   "oral-b": "오랄비",
+   "오랄b": "오랄비",
+   "sonicare": "소닉케어",
+   "칫솔머리": "칫솔모"
+  }
+ },
+ "category_terms": [
+  "칫솔",
+  "치솔"
+ ],
+ "exclude": [
+  "^(?!.*칫솔).*(구강세정기|워터픽|치실|치약)"
+ ],
+ "themes": [
+  {
+   "name": "Pain:충전·배터리 불량",
+   "pattern": "충전안|충전이안|충전불량|배터리수명|배터리교체|방전|안켜"
+  },
+  {
+   "name": "Pain:고장·수리",
+   "pattern": "고장|안됨|안돼|작동안|as센터|a/s|서비스센터|수리|환불"
+  },
+  {
+   "name": "Pain:잇몸·시림",
+   "pattern": "잇몸피|피나|피가|시림|시려|잇몸아|따가|상처"
+  },
+  {
+   "name": "Pain:위생·곰팡이",
+   "pattern": "곰팡이|물때|녹|냄새|세균"
+  },
+  {
+   "name": "Pain:소음·진동 불편",
+   "pattern": "시끄|소음|진동이심|간지러"
+  },
+  {
+   "name": "Pain:단점·불만",
+   "pattern": "단점|불편|후회|별로|부작용"
+  },
+  {
+   "name": "Feature:구동 방식",
+   "pattern": "음파|회전|진동식|초음파|3d"
+  },
+  {
+   "name": "Feature:스마트·앱 연동",
+   "pattern": "앱|블루투스|스마트|ai|압력센서|타이머|모드"
+  },
+  {
+   "name": "Feature:충전 방식",
+   "pattern": "무선충전|usb|c타입|충전기|충전거치대"
+  },
+  {
+   "name": "Feature:살균·케이스",
+   "pattern": "uv|살균|케이스|거치대"
+  },
+  {
+   "name": "Feature:칫솔모·리필",
+   "pattern": "칫솔모|리필|교체모|호환"
+  },
+  {
+   "name": "Attribute:휴대·여행",
+   "pattern": "휴대|여행|미니|슬림"
+  },
+  {
+   "name": "Attribute:저자극·민감",
+   "pattern": "민감|저자극|부드러|잇몸케어|교정"
+  },
+  {
+   "name": "Attribute:가격·가성비",
+   "pattern": "가성비|저렴|싼|최저가|가격"
+  },
+  {
+   "name": "Attribute:대상",
+   "pattern": "어린이|아이|유아|키즈|노인|부모님"
+  },
+  {
+   "name": "Attribute:배터리 지속",
+   "pattern": "오래가|배터리오래|한달"
+  }
+ ],
+ "brands": [
+  "필립스",
+  "소닉케어",
+  "오랄비",
+  "파나소닉",
+  "샤오미"
+ ],
+ "no_match": {
+  "with_brand": "브랜드·제품명",
+  "without_brand": "코어·일반"
+ }
+}
