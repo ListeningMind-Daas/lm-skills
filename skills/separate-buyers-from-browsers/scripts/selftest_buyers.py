@@ -151,12 +151,34 @@ def check_us_duplicates(tmp):
     return f
 
 
+def check_channel_brand(tmp):
+    """V13 회귀(2026-09-30 선크림 px) — 브랜드 사전에 판매 채널명이 있으면 경고하고 리포트에 적는다."""
+    d = tmp / "chan"; d.mkdir()
+    themes = {"rules": {"변형치환": {}},
+              "themes": [{"name": "채널", "tier": "buyer", "pattern": "px|다이소"},
+                         {"name": "비교", "tier": "browser", "pattern": "추천"}],
+              "brands": ["닥터지", "px"], "no_match": {"with_brand": "브랜드", "without_brand": "헤드"},
+              "no_match_tier": {"with_brand": "brand_nav", "without_brand": "unclassified"}}
+    data = [kw("선크림", 300000), kw("px 선크림", 60000), kw("다이소 선크림", 50000), kw("닥터지 선크림", 40000),
+            kw("선크림 추천", 30000)]
+    (d / "m.json").write_text(json.dumps({"data": data}, ensure_ascii=False), encoding="utf-8")
+    (d / "t.json").write_text(json.dumps(themes, ensure_ascii=False), encoding="utf-8")
+    run([f"{HERE}/build_universe.py", "--metrics", "m.json", "--themes", "t.json", "-o", "u.csv"], d)
+    rc, out = run([f"{HERE}/buyer_share.py", "u.csv", "--themes", "t.json", "-o", "c.csv", "--report", "r.md",
+                   "--queried-at", "2026-09-30"], d)
+    md = (d / "r.md").read_text(encoding="utf-8") if not rc else ""
+    if rc or "px(채널)" not in out or "브랜드 사전에 거래 마커" not in md or "닥터지(" in out:
+        return [("buyer_share(채널 브랜드)", "브랜드 사전의 판매 채널명(px)을 경고하지 않았다(V13)", (out + md)[-300:])]
+    return []
+
+
 def main():
     fails = []
     S = str(HERE)
     with tempfile.TemporaryDirectory() as td:
         tmp = pathlib.Path(td)
         fixture(tmp)
+        fails += check_channel_brand(tmp)
 
         # SKILL.md STEP 3 예시 그대로
         rc, out = run([f"{S}/build_universe.py", "--metrics", "metrics.json",

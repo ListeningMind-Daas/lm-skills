@@ -11,6 +11,11 @@ plan_queries.py와 brand_benchmark.py가 같은 규칙으로 키워드를 분류
      근접 변형을 합쳐 같은 값을 돌려준 것으로 보고 구글 볼륨을 한 번만 센다. canonical이 달라도
      적용한다(nike·nikep·nikes, 아디다스·아디도스, asics·acisc — 2026-09-28 실측 [추정]).
   ①~③을 이은 연결 요소가 한 묶음이다. 하한 = 묶음 내 최댓값 행 · 상한 = 구글(공유 묶음당 1회) + 네이버 합.
+  ④ **네이버 분리 변형** — ③(구글 공유)으로만 이어졌고 네이버 볼륨이 대표와 다른 행은 네이버에서는 서로 다른
+     검색이다(네이버는 표기마다 따로 센다). 이 행의 네이버 볼륨은 같은 검색으로 볼 근거가 없으므로 하한에도 더한다
+     (하한 = 대표 행 + 네이버 분리 변형의 네이버 볼륨). 2단도 따로 조회한다(plan_queries stage2). 2026-09-30 실측:
+     «헤라 선크림»(네이버 123,860)이 «헤라 썬크림»(231,490)과 구글 25,400을 공유해 묶이며 하한에서 빠져
+     헤라 순위가 하한 5위 ↔ 상한 2위로 뒤집혔고, 논브랜드 «썬크림» 묶음이 하한 583,810 ~ 상한 922,120으로 벌어졌다.
 """
 import json, pathlib, re, sys, unicodedata
 
@@ -20,6 +25,7 @@ from series_dedup import apply_rules, canon as _canon, dedup_map  # noqa: E402  
 NONBRAND = "_논브랜드"
 MULTI = "_비교(복수 브랜드)"
 GG_SHARED_MIN = 1000   # [가정] 이보다 작은 구글 볼륨은 우연히 같을 수 있어 공유 판정에 쓰지 않는다
+NV_SPLIT = "네이버 분리(구글 공유 · 네이버 볼륨 다름)"   # ④ dup_basis 라벨
 MASK = " · "           # 테마 판정 때 브랜드 토큰 자리를 가리는 구분자 — 정규식이 이것을 넘어 매칭하지 않는다
 
 
@@ -131,20 +137,25 @@ def components(cfg, rows):
 
     반환: (info, comps)
       info[keyword] = {"comp": id, "canonical", "bucket", "excluded", "vol", "dup_basis"}
-      comps[id] = {"rep": 대표 키워드, "members": [...], "lo", "hi", "bucket", "canonical", "excluded"}
+      comps[id] = {"rep": 대표 키워드, "members": [...], "lo", "hi", "bucket", "canonical", "excluded",
+                   "nv_split": [네이버 분리 변형 키워드 ...] (④ — 하한에 네이버 볼륨을 더한 행)}
     """
     rows = [d for d in rows if isinstance(d, dict) and isinstance(d.get("keyword"), str)]
-    info, parent = {}, {}
+    info, parent, same = {}, {}, {}     # parent: ①~③ 묶음 · same: ①② 같은 검색(표기변형·중복)만
 
-    def find(x):
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]; x = parent[x]
+    def find(x, par=parent):
+        while par[x] != x:
+            par[x] = par[par[x]]; x = par[x]
         return x
 
-    def union(a, b):
+    def union(a, b, same_search=True):
         ra, rb = find(a), find(b)
         if ra != rb:
             parent[rb] = ra
+        if same_search:
+            sa, sb = find(a, same), find(b, same)
+            if sa != sb:
+                same[sb] = sa
 
     for d in rows:
         kw = d["keyword"]; c = cfg.canon(kw); m, v = _metrics(d)
@@ -153,7 +164,7 @@ def components(cfg, rows):
         info[kw] = {"canonical": c, "bucket": "" if ex else cfg.bucket(c), "excluded": ex, "vol": v,
                     "gg": gg, "nv": nv, "cpc": m.get("cpc"), "ci": m.get("competition_index"),
                     "dup_basis": "", "row": d}
-        parent[kw] = kw
+        parent[kw] = kw; same[kw] = kw
 
     # ① 같은 검색의 중복 (series_dedup) — 같은 버킷 안에서만 받아들인다
     dm = dedup_map(rows, cfg.subs)
@@ -178,7 +189,7 @@ def components(cfg, rows):
         key = (i["bucket"], i["gg"], i["cpc"], i["ci"])
         i["gkey"] = key
         if key in gsig:
-            union(gsig[key], kw)
+            union(gsig[key], kw, same_search=False)
         else:
             gsig[key] = kw
 
@@ -194,6 +205,18 @@ def components(cfg, rows):
         mem = sorted(c["members"], key=lambda k: (-info[k]["vol"], k))
         rep = mem[0]
         lo = info[rep]["vol"]
+        # ④ 네이버 분리 변형: 대표와 같은 검색(①②)이 아닌 하위 묶음마다 가장 큰 행 — 네이버 볼륨이 대표와 다르면
+        #    네이버에서는 다른 검색이므로 그 네이버 볼륨을 하한에도 더한다(구글은 대표에서 이미 한 번 셌다)
+        split, seen_s = [], {find(rep, same)}
+        rep_nv = info[rep]["nv"]
+        for k in mem[1:]:
+            sk = find(k, same)
+            if sk in seen_s or info[k]["excluded"]:
+                continue
+            seen_s.add(sk)
+            nv = info[k]["nv"]
+            if nv and rep_nv is not None and nv != rep_nv:
+                split.append(k); lo += nv
         seen_g, hi = set(), 0
         for k in mem:
             i = info[k]
@@ -204,13 +227,16 @@ def components(cfg, rows):
                 seen_g.add(key); hi += i["gg"] or 0
             hi += i["nv"] or 0
         c.update({"rep": rep, "members": mem, "lo": lo, "hi": max(hi, lo), "bucket": info[rep]["bucket"],
-                  "canonical": info[rep]["canonical"], "excluded": info[rep]["excluded"]})
+                  "canonical": info[rep]["canonical"], "excluded": info[rep]["excluded"], "nv_split": split})
     # 묶음에 들어온 이유 — 대표 행은 비우고, 나머지는 가장 직접적인 근거 하나
     for c in comps.values():
         for k in c["members"]:
             i = info[k]
             if i["excluded"] or k == c["rep"]:
                 i["dup_basis"] = ""
+                continue
+            if k in c["nv_split"]:
+                i["dup_basis"] = NV_SPLIT
                 continue
             others = [info[x] for x in c["members"] if x != k]
             if i.get("_dm"):

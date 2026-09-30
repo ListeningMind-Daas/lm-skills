@@ -203,6 +203,26 @@ def main():
                     or "10 ×" not in o or "(미분류)" not in o:
                 fails.append(("prepare_stages stage2", "층당 최소 3 채움·크레딧·(미분류) 보고가 없다", o[-400:]))
 
+        # V13 (2026-09-30 선크림) — STEP 3 끝 유니버스 요청 목록·병합: metrics_stage1 = 시드 응답 + 유니버스 응답
+        rc, o = run([f"{S}/prepare_stages.py", "universe", "--seed-metrics", "stage1_seeds.json", "--layers", "layers.json",
+                     "--expansion", "if_저당아이스크림.json@5", "--expansion", "if_다이어트아이스크림.json@5",
+                     "-o", "universe_request.json"], t)
+        ur = json.load(open(t / "universe_request.json", encoding="utf-8")) if not rc else None
+        seed_c = {re.sub(r"\s+", "", d["keyword"]).replace("슈가", "슈거") for d in json.load(open(t / "stage1_seeds.json",
+                  encoding="utf-8"))["data"]}
+        if rc or not ur or any(re.sub(r"\s+", "", k).replace("슈가", "슈거") in seed_c for k in ur) or "1 × " not in o:
+            fails.append(("V13 universe", "유니버스 요청 목록에 시드 응답 키워드가 들어갔거나 크레딧 식이 없다", o[-300:]))
+        rc, o = run([f"{S}/prepare_stages.py", "merge", "stage1_seeds.json", "metrics_stage1.json", "-o", "m_merged.json"], t)
+        mg = json.load(open(t / "m_merged.json", encoding="utf-8"))["data"] if not rc else []
+        kws = [d["keyword"] for d in mg]
+        if rc or len(kws) != len(set(kws)) or not set(d["keyword"] for d in json.load(open(t / "stage1_seeds.json",
+                encoding="utf-8"))["data"]) <= set(kws):
+            fails.append(("V13 merge", "1단 지표 병합이 중복을 남기거나 시드 응답을 빠뜨렸다", o[-300:]))
+        doc_ = SKILL_MD.read_text(encoding="utf-8")
+        if not (0 < doc_.find("prepare_stages.py merge") < doc_.find("scripts/coverage_curve.py --metrics metrics_stage1.json")
+                < doc_.find("### STEP 3.5")):
+            fails.append(("V13 순서", "SKILL.md에서 metrics_stage1.json 병합이 STEP 3 절단 판정·3.5 검토보다 뒤에 있다", ""))
+
         # STEP 3.5 — 확장 반환 검토 (P1-1): 제외 패턴이 반환 대부분을 덮으면 시드를 동음이의 의심으로 표시
         lx = json.load(open(t / "layers.json", encoding="utf-8"))
         lx["exclude"] = [{"pattern": "혈당스파이크|당뇨", "reason": "테스트 — 무관 검색"}]

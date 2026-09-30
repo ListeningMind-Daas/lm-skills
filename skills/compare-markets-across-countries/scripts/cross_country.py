@@ -78,16 +78,37 @@ class Master:
     def subs(self, gl):
         return self.rules.get(gl, {}).get("변형치환", {})
 
-    def index(self, gl):
-        """canonical → (concept_id, 요청 원문, match_type)"""
-        sub, idx = self.subs(gl), {}
-        for t in self.anchor.get(gl, []):
-            idx[canon(t, sub)] = (ANCHOR, t, "기준어")
+    def raw_terms(self, gl):
+        """마스터에 적힌 요청 원문 목록(순서 유지 · 같은 글자 중복 제거) — 1단 과금 단위다.
+
+        canonical 수가 아니다: «선크림»·«썬크림»처럼 같은 canonical의 표기변형을 둘 다 적으면 둘 다 요청·과금된다
+        (2026-09-30 선크림 실측: canonical 17 · 실제 요청 19)."""
+        out = [(t, ANCHOR, "기준어") for t in self.anchor.get(gl, [])]
         for c in self.concepts:
             for t in c.get("terms", {}).get(gl, []):
                 kw, mt = (t["kw"], t.get("match", "")) if isinstance(t, dict) else (t, "")
-                idx.setdefault(canon(kw, sub), (c["id"], kw, mt))
+                out.append((kw, c["id"], mt))
+        seen, uniq = set(), []
+        for kw, cid, mt in out:
+            if kw not in seen:
+                seen.add(kw); uniq.append((kw, cid, mt))
+        return uniq
+
+    def index(self, gl):
+        """canonical → (concept_id, 요청 원문, match_type). 같은 canonical이 여럿이면 **먼저 적은** 원문 —
+        기준어·개념 모두 같은 규칙이다(기준어가 개념보다 먼저). 예전에는 기준어만 마지막 원문을 골라
+        2단 요청어가 마스터 순서에 따라 달라졌다."""
+        sub, idx = self.subs(gl), {}
+        for kw, cid, mt in self.raw_terms(gl):
+            idx.setdefault(canon(kw, sub), (cid, kw, mt))
         return idx
+
+    def originals(self, gl):
+        """canonical → 그 canonical에 걸리는 요청 원문 목록(마스터 순서)."""
+        sub, out = self.subs(gl), {}
+        for kw, _, _ in self.raw_terms(gl):
+            out.setdefault(canon(kw, sub), []).append(kw)
+        return out
 
     def classify(self, gl, kw):
         c = canon(kw, self.subs(gl))
@@ -101,9 +122,7 @@ class Master:
         return next((c.get("label", cid) for c in self.concepts if c["id"] == cid), cid)
 
     def requested(self, gl):
-        return {canon(k, self.subs(gl)) for k in
-                self.anchor.get(gl, []) + [t["kw"] if isinstance(t, dict) else t
-                                           for c in self.concepts for t in c.get("terms", {}).get(gl, [])]}
+        return {canon(k, self.subs(gl)) for k, _, _ in self.raw_terms(gl)}
 
 
 def shift(month, n):
@@ -139,11 +158,15 @@ def pearson(x, y):
 def cmd_select(a):
     m = Master(a.concepts)
     out_dir = pathlib.Path(a.out); out_dir.mkdir(parents=True, exist_ok=True)
-    report, total_p, total_n, skipped = [], 0, 0, []
+    report, total_p, total_n, total_c, skipped, lost_forms = [], 0, 0, 0, [], []
     for gl, path in pairs(a.screen, "--screen").items():
         req = m.requested(gl)
+        origs = m.originals(gl)
+        rows = load(path)
+        # 응답에 실제로 있는 표기(띄어쓰기·전각/반각·대소문자만 무시 — 변형치환은 적용하지 않는다)
+        got_forms = {canon(d["keyword"], {}) for d in rows}
         chosen = []
-        for d in load(path):
+        for d in rows:
             kw = d["keyword"]; am = d.get("ads_metrics") or {}
             c, (cid, _, mt) = m.classify(gl, kw)
             vol = am.get("volume_total")
@@ -160,8 +183,11 @@ def cmd_select(a):
             if passed:
                 # 2단에는 마스터의 요청 원문만 넣는다 — 자동 반환된 표기변형까지 넣으면
                 # 같은 수요에 10크레딧을 두 번 낸다(T5). 변형은 2단 응답에서 다시 함께 돌아온다.
-                orig = m.index(gl)[c][1]
-                if orig not in chosen:
+                # 같은 canonical 원문이 여럿이면 **1단 응답에 실제로 있는** 원문 중 마스터에 먼저 적은 것을 쓴다
+                # (2026-09-30: 1단 응답에 없던 «日やけ止め»가 2단 요청어로 뽑혔다). 원문이 하나도 응답에 없으면 첫 원문.
+                cands = origs.get(c, [m.index(gl)[c][1]])
+                orig = next((k for k in cands if canon(k, {}) in got_forms), cands[0])
+                if not any(k in chosen for k in cands):
                     chosen.append(orig)
             report.append({"country": gl, "concept_id": cid, "keyword": kw, "canonical": c,
                            "match_type": mt, "requested": c in req, "volume_total": vol,
@@ -173,6 +199,15 @@ def cmd_select(a):
             report.append({"country": gl, "concept_id": cid, "keyword": kw, "canonical": c,
                            "match_type": mt, "requested": True, "volume_total": "",
                            "passed_gate": False, "reason": "응답에 없음"})
+        # 요청한 표기가 응답에 없는데 같은 canonical의 다른 표기만 돌아온 경우 — 그룹은 살아 있지만
+        # 그 표기의 볼륨은 [데이터 공백]이다(0이 아니다). 표기변형 하한·상한에 들어가지 않는다
+        for kw, cid, mt in m.raw_terms(gl):
+            c = canon(kw, m.subs(gl))
+            if c in got and canon(kw, {}) not in got_forms:
+                report.append({"country": gl, "concept_id": cid, "keyword": kw, "canonical": c,
+                               "match_type": mt, "requested": True, "volume_total": "",
+                               "passed_gate": False, "reason": "요청 표기 미반환(같은 그룹의 다른 표기만 반환)"})
+                lost_forms.append(f"{gl}/{kw}")
         # 개념 동의어가 하나도 통과하지 못하면 기준어만으로 2단을 부르지 않는다 — 비교할 개념이 없다
         anchors = {m.index(gl)[c][1] for c in req if m.index(gl)[c][0] == ANCHOR}
         if chosen and all(k in anchors for k in chosen):
@@ -183,7 +218,7 @@ def cmd_select(a):
                     r["passed_gate"], r["reason"] = False, "개념 동의어 전멸 — 2단 생략"
         (out_dir / f"stage2_{gl}.json").write_text(json.dumps(chosen, ensure_ascii=False, indent=1),
                                                    encoding="utf-8")
-        total_p += len(chosen); total_n += len(req)
+        total_p += len(chosen); total_n += len(m.raw_terms(gl)); total_c += len(req)
         if gl in skipped:
             print(f"[{gl}] 개념 동의어가 모두 게이트 미달·미반환 — 2단 생략(기준어만 조회하지 않는다) · "
                   f"compare에 --skipped {gl}로 넘겨 [데이터 공백] 행을 남긴다")
@@ -197,6 +232,11 @@ def cmd_select(a):
             and (r["country"], r["canonical"]) not in passed_c]
     print(f"합계 2단 {total_p}개 → {total_p * 10:,}크레딧 · 탈락 동의어 {len(gaps)}개 "
           f"(국가별 표현 부재 후보 — [데이터 공백]으로 보고)")
+    print(f"1단 요청 N = {total_n}개(마스터 원문 · 과금 단위) · canonical {total_c}개"
+          + (f" — 표기변형 원문 {total_n - total_c}개를 함께 요청했다" if total_n != total_c else ""))
+    if lost_forms:
+        print(f"⚠️ 요청한 표기가 응답에 없다(같은 그룹의 다른 표기만 반환) {len(lost_forms)}개 [데이터 공백]: "
+              + ", ".join(lost_forms) + " — 그 표기의 볼륨은 0이 아니라 미확인이다. 2단 요청어는 응답에 있는 표기로 골랐다")
     two, one = total_n + 10 * total_p, 10 * total_n
     print(f"손익분기: 2단 방식 1×N + 10×P = {total_n} + {10 * total_p:,} = {two:,} vs 전량 all 10×N = {one:,} "
           f"— 2단이 싼 조건은 P < 0.9N (이번 P/N = {total_p / total_n:.0%})" if total_n else "")
@@ -280,11 +320,22 @@ def cmd_compare(a):
                 continue
             ws = [win_sum(d) for d, _ in members]
             rep_ws = win_sum(rep[0])
+            # 표기변형끼리 전년 대비 부호가 갈리면 yoy가 대표 선택(12개월 최대)에 달린다 — 경고만 하고 고르지 않는다
+            # (2026-09-30 kr: 썬크림 +17.5% / 선크림 −10.9% — 대표는 12개월 합이 조금 큰 썬크림)
+            vy = []
+            for d, _ in members:
+                sd = series(d)
+                a3 = [sd.get(x) for x in cur]; b3 = [sd.get(x) for x in prev]
+                if None in a3 or None in b3 or sum(b3) < a.yoy_gate:
+                    continue
+                vy.append((d["keyword"], sum(a3) / sum(b3) - 1))
+            split_yoy = (" / ".join(f"{k} {y:+.1%}" for k, y in vy)
+                         if len(vy) > 1 and min(y for _, y in vy) < 0 < max(y for _, y in vy) else "")
             lo = None if rep_ws is None else max(w for w in ws if w is not None)
             hi = None if any(w is None for w in ws) else sum(ws)
             ams = [d.get("ads_metrics") or {} for d, _ in members]
             agg.setdefault((gl, cid), []).append({
-                "rep": rep[0], "lo": lo, "hi": hi, "multi": len(members) > 1,
+                "rep": rep[0], "lo": lo, "hi": hi, "multi": len(members) > 1, "split_yoy": split_yoy,
                 "gg_hi": sum(x.get("gg_volume_total") or 0 for x in ams),
                 "nv_hi": sum(x.get("nv_volume_total") or 0 for x in ams)})
 
@@ -357,6 +408,9 @@ def cmd_compare(a):
             warn.append("비교 창 월값 모두 동일(평탄)")
         if yoy == 0.0 and yoy != "":
             warn.append("전년 대비 정확히 0.0%(같은 버킷)")
+        vsplit = " · ".join(g["split_yoy"] for g in grp if g["split_yoy"])
+        if vsplit:
+            warn.append("표기변형 간 추세 부호 갈림(대표 선택에 따라 yoy 부호가 바뀜)")
         # 비수기 창(P1-4): 비교 창 3개월이 12개월 볼륨에서 차지하는 비중
         wshare = round(sum(p[-3:]) / sum(p), 3) if profile else ""
         off = "비수기 창" if wshare != "" and wshare < a.offseason_share else ""
@@ -367,7 +421,7 @@ def cmd_compare(a):
                 "f_ratio": f_ratio, "top": top, "demo": demo_status, "peak": peak,
                 "peak_share": round(max(profile), 3) if profile else "", "n": len(reps),
                 "label": ("[추정]" if warn else "[실제 데이터]") if yoy != "" else "",
-                "warn": " · ".join(warn) if yoy != "" else "", "wshare": wshare, "off": off}
+                "warn": " · ".join(warn) if yoy != "" else "", "wshare": wshare, "off": off, "vsplit": vsplit}
 
     S = {k: summarize(k[0], k[1], v) for k, v in agg.items()}
 
@@ -400,7 +454,7 @@ def cmd_compare(a):
             "index_reading": reading(cid, ratio("vol_lo")),
             "index_rank_lo": "", "index_rank_hi": "", "index_rank_flip": "",
             "yoy_3m": s["yoy"], "yoy_basis": "그룹 대표 행(하한 기준)", "yoy_status": s["status"],
-            "yoy_label": s["label"], "bucket_warning": s["warn"],
+            "yoy_label": s["label"], "bucket_warning": s["warn"], "variant_yoy_split": s["vsplit"],
             "window_share_12m": s["wshare"], "offseason_flag": s["off"],
             "prev_year_window_volume": s["prev"], "missing_in_window": s["miss"],
             "missing_in_12m": s["miss12"],
@@ -466,6 +520,10 @@ def cmd_compare(a):
     bk = [f"{r['country']}/{r['concept_id']}" for r in out if r.get("bucket_warning")]
     if bk:
         print(f"⚠️ 버킷 반올림·평탄 경고 {len(bk)}칸 — yoy_3m은 [추정]: {', '.join(bk)}")
+    vs = [f"{r['country']}/{r['concept_id']}({r['variant_yoy_split']})" for r in out if r.get("variant_yoy_split")]
+    if vs:
+        print(f"⚠️ 표기변형끼리 전년 대비 부호가 갈린다 — yoy_3m 부호가 대표 행 선택(12개월 최대)에 달려 있다 [추정]: "
+              + ", ".join(vs) + " — 성장 방향을 단정하지 말고 변형별 값을 함께 적는다")
     offs = [f"{r['country']}/{r['concept_id']} {r['window_share_12m']:.0%}" for r in out if r.get("offseason_flag")]
     if offs:
         print(f"⚠️ 비수기 창(비교 3개월이 연 볼륨의 {a.offseason_share:.0%} 미만) — 성장률로 국가를 줄 세우지 않는다: "

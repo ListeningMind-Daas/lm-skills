@@ -10,7 +10,9 @@
     하한(묶음 최댓값)과 상한(구글 공유 1회 + 네이버 합)을 낸다(계약 T5 · 확장). 순위는 하한 기준,
     상한에서 뒤집히면 rank_flip · 경고로 표시한다 → bounds_{category}.csv
   · 월 패널(점유율·yoy·경고)은 묶음 대표 1행 시계열 = 하한 기준이다. 비대표 변형(오타·구글 공유 행)은
-    월 패널에 들어가지 않는다 — 결측 이력이 있는 오타 변형 하나가 브랜드 전체 yoy를 지우지 않는다
+    월 패널에 들어가지 않는다 — 결측 이력이 있는 오타 변형 하나가 브랜드 전체 yoy를 지우지 않는다.
+    단 네이버 분리 변형(구글만 공유하고 네이버 볼륨이 다른 행 · bench_common ④)이 2단에 있으면 그 월별 네이버
+    볼륨(`nv`)을 더한다 — 네이버에서는 다른 검색이다. 2단에 없으면 과소집계를 gap_alert에 적는다
   · 결측 월(nv_code, total 키 없음)은 0이 아니라 결측 — 그 달의 점유율은 «계산 불가»
   · 마지막 달은 기본 제외 (미완결) — --include-last-month로 포함하면 리포트에 표기된다
   · 전년 동기 비교(yoy_3m)는 기저 게이트 미달이면 비운다 · API volume_trend는 쓰지 않는다
@@ -45,7 +47,7 @@ BOUND_COLS = ["brand", "bucket_type", "is_focal", "groups_n", "rows_n", "volume_
               "rank_lo", "rank_hi", "rank_flip", "bounds_source", "label"]
 THEME_COLS = ["theme", "brand", "stage1_groups", "stage1_volume_12m_lo", "stage2_groups", "stage2_volume_12m_lo",
               "theme_coverage", "cell_status", "label"]
-SERIES_BASIS = "대표 행(하한 기준)"
+SERIES_BASIS = "대표 행 + 네이버 분리 변형(하한 기준)"
 ALONE_WARN = 0.5   # [가정] 브랜드명 단독 비중이 이 이상이면 점유율을 브랜드 인지도 쪽으로 읽으라고 경고
 
 
@@ -101,6 +103,9 @@ def main():
         c["alone"] = cfg.is_alone(c["canonical"])
         # 월 패널 대표: 묶음 안에서 2단에 있는 가장 큰 행 (보통 묶음 대표와 같다)
         c["panel"] = next((k for k in c["members"] if k in s2kw), None)
+        # 네이버 분리 변형(bench_common ④): 2단에 있으면 월 패널에 네이버 볼륨만 더한다(구글은 대표에서 한 번)
+        c["panel_nv"] = [k for k in c.get("nv_split", []) if k in s2kw and k != c["panel"]] if c["panel"] else []
+        c["panel_nv_missing"] = [k for k in c.get("nv_split", []) if k not in s2kw]
 
     by_kw = {d["keyword"]: d for d in data}
     used = [by_kw[c["panel"]] for c in sorted(live.values(), key=lambda c: c["rep"]) if c["panel"]]
@@ -128,26 +133,33 @@ def main():
     miss_kw = defaultdict(set)
     tvol = defaultdict(dict)      # tvol[(theme, bucket)][month]
     kn = defaultdict(int)
+    def month_value(d, m, key="total"):
+        """d의 m월 값 — 결측(nv_code · 키 없음)은 None, 이력 시작 이전은 --pre-history-zero면 0."""
+        r = {x["month"]: x for x in d["monthly_volume"]}.get(m)
+        if r is not None and key in r:
+            return r[key]
+        if r is None and m < d["monthly_volume"][0]["month"] and a.pre_history_zero:
+            return 0
+        return None
+
     for d in used:
         c = panel_of[d["keyword"]]
-        b, t = c["bucket"], c["theme"]; kn[b] += 1
-        s = {r["month"]: r for r in d["monthly_volume"]}
-        first = d["monthly_volume"][0]["month"]
+        b, t = c["bucket"], c["theme"]; kn[b] += 1 + len(c["panel_nv"])
+        parts = [(d, "total", c["alone"])] + [(by_kw[k], "nv", cfg.is_alone(info[k]["canonical"])) for k in c["panel_nv"]]
         for m in need:
-            r = s.get(m)
-            if r is not None and "total" in r:
-                v = r["total"]
-            elif r is None and m < first and a.pre_history_zero:
-                v = 0
-            else:
-                v = None
+            v = 0
+            for dd, key, is_alone in parts:
+                x = month_value(dd, m, key)
+                if x is None:
+                    miss_kw[dd["keyword"]].add(m); v = None; break
+                v += x
+                if is_alone:
+                    alone[b][m] += x
             for key, store in ((b, vol), ((t, b), tvol)):
                 prev = store[key].get(m, 0)
                 store[key][m] = None if (prev is None or v is None) else prev + v
             if v is None:
-                miss[b][m] += 1; miss_kw[d["keyword"]].add(m)
-            elif c["alone"]:
-                alone[b][m] += v
+                miss[b][m] += 1
 
     buckets = [b for b in cfg.brands] + [MULTI, NONBRAND]
     brands = cfg.brands
@@ -322,11 +334,23 @@ def main():
                  + ", ".join(f"{b} {at[b]['brand_alone_share']:.1%}" for b in heavy)
                  + f" [추정] — 이 브랜드들의 점유율은 «{a.category} 점유율»이 아니라 브랜드명 검색(인지도·다른 카테고리 수요 포함) "
                  "점유에 가깝다. 카테고리 안의 경쟁은 수식어·모델 검색(message_share)으로 본다")
-    L += [f"- 위 표와 아래 경고는 묶음 대표 1행 시계열({SERIES_BASIS})이다 [추정] — 2단은 대표 행만 "
-          "조회하므로 상한 기준 월 시계열은 없다 [데이터 공백]", ""]
+    L += [f"- 위 표와 아래 경고는 묶음 대표 시계열({SERIES_BASIS})이다 [추정] — 2단은 대표 행(과 네이버 분리 변형)만 "
+          "조회하므로 상한 기준 월 시계열은 없다 [데이터 공백]"]
+    sp_in = sorted(k for c in live.values() for k in c["panel_nv"])
+    sp_out = sorted(((k, info[k]["nv"] or 0, c["bucket"]) for c in live.values() for k in c["panel_nv_missing"]),
+                    key=lambda x: -x[1])
+    if sp_in:
+        L.append(f"- 네이버 분리 변형 {len(sp_in)}행(구글 지표는 대표와 같고 네이버 볼륨이 다름 — 네이버에서는 다른 검색)은 "
+                 "월 패널에 네이버 볼륨만 더했다 [추정]: " + ", ".join(sp_in[:10]))
+    if sp_out:
+        L.append(f"- ⚠️ 네이버 분리 변형 {len(sp_out)}행이 2단에 없어 월 패널이 과소집계된다 [데이터 공백]: "
+                 + ", ".join(f"{k}({b} 네이버 12개월 {v:,})" for k, v, b in sp_out[:10])
+                 + " — plan_queries stage2를 다시 돌려 2단에 넣을 것")
+    L.append("")
     rng = lambda lo, hi: "계산 불가" if lo == "" else f"하한 기준 {lo:.1%} / 상한 기준 {hi:.1%}"
     L += ["## 12개월 검색량·점유율 범위 (중복 묶음 하한~상한)", "",
-          "하한 = 묶음 최댓값(변형이 같은 검색의 중복일 때) · 상한 = 구글 공유 1회 + 네이버 합(서로 다른 검색일 때). "
+          "하한 = 묶음 최댓값 + 네이버 분리 변형의 네이버 볼륨(변형이 같은 검색의 중복일 때) · "
+          "상한 = 구글 공유 1회 + 네이버 합(서로 다른 검색일 때). "
           "시계열·지표가 같은 행과 구글 지표가 같은 행은 같은 검색으로 보고 한 번만 셌다(계약 T5 · 확장). "
           "점유율은 하한·상한 각자의 분모로 계산해서 «하한 기준 / 상한 기준»으로 적는다 — 범위가 아니다 [추정]. "
           f"출처: {src}", "",

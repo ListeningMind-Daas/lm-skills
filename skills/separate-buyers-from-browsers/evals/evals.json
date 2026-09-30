@@ -21,6 +21,13 @@
    "prompt": "stick vacuum keywords for the US — which ones are real buyers, and give me the age/gender of those buyers plus how accurate your classification is.",
    "expected_output": "US 시장 — 인구통계는 gl=kr 외 시장에서 반환되지 않으므로(사양) 성·연령 답을 만들지 않는다. 분류 정확도 수치를 내지 않는다(정답 라벨 없음 — 규칙·충돌·LM intents 대조로 대신). 영어 마커·브랜드는 토큰 단위로 맞춰 best≠bestbuy · or≠for · deal≠ideal 오탐을 막고, 변형치환은 공백 제거 전에 적용한다(vacuum sale이 vacuumale이 되지 않게). 어순·복수형 변형이 지표까지 같은 묶음은 같은 검색의 중복으로 합쳐 거래 비중을 부풀리지 않고, 합친 뒤 하한=상한을 «중복 없음»으로 쓰지 않는다. 2단 all 대상(미분류·충돌)의 intents 0/1 플래그(동시 1 가능)를 요약. 검색 ≠ 구매 명시",
    "files": []
+  },
+  {
+   "id": 3,
+   "name": "sunscreen-channel-in-brands",
+   "prompt": "선크림 검색 중 살 사람 비중 알려줘. 키워드는 map-your-market 유니버스 1,484개를 써.",
+   "expected_output": "① 1,000개 이하로 나눠 부르고 request_detail·cost_detail을 합치거나 요청 배열을 --requested로 준다 ② buyer_share의 «브랜드 사전에 거래 마커» 경고를 보고 px를 brands에서 빼 채널 클래스에 둔다(또는 [가정]으로 남긴다) ③ LM «거래» 미분류 헤드를 브랜드 누락 → 거래 마커 누락 → 헤드(고치지 않음) 순으로 가른다 ④ 판정은 buyer_share의 brand 열로 한다 (배경: 2026-09-30 실측: map-your-market 브랜드 사전에 판매처 px가 들어 있어 «px 선크림»이 브랜드 포함 쪽으로 갔다(채널로 옮기면 논브랜드 안 거래 의도 10.5% → 11.8%). 1,484개는 요청 한도 1,000을 넘어 분할이 필요했고, «샤넬 선크림»처럼 브랜드 누락 헤드를 LM이 «거래»로 읽었다.)",
+   "files": []
   }
  ]
 }

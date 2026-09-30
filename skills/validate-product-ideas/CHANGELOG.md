@@ -3,6 +3,19 @@
 판 번호의 정본은 SKILL.md frontmatter `metadata.version` 이다. 새 판을 낼 때 두 곳을 같이 고친다.
 결함은 «무엇이 몇 % 틀렸다»처럼 근거 수치와 함께 적는다.
 
+## v1.3.0 (2026-09-30 · lm-skills 1.6.1)
+
+2026-09-30 선크림(KR) «무기자차 톤업 선스틱» 예시 실행에서 보고된 결함을 저장 응답으로 0크레딧 재현한 뒤 고쳤다.
+
+| 결함 | 조치 | 근거 |
+|---|---|---|
+| P1 단계 순서 모순 — STEP 3 `coverage_curve`·STEP 3.5 `review`가 `--metrics metrics_stage1.json`을 요구하는데 그 파일은 STEP 5(유니버스 볼륨)에서야 생김 | 유니버스 볼륨 조회(1 × N)를 STEP 3 끝(확장 직후 · 절단 판정·검토 전)으로 옮김. `prepare_stages.py universe`(확장 반환 중 시드 응답에 없는 키워드 → 요청 목록 · canonical 대조)·`merge`(시드 응답 + 유니버스 응답 → `metrics_stage1.json`) 추가. 예산식에 단계 표시 | 선크림 실행은 손으로 병합했다. 저장 응답에 새 명령을 돌리니 요청 목록 38개·병합 49행이 실행 때 손으로 만든 요청 목록·병합 파일과 행·순서까지 같았다 |
+| 문서 — `metrics_stage1` = 1단 시드 응답 + 유니버스 응답 병합이라는 설명 없음 | STEP 3 «유니버스 볼륨»에 정의·명령 | — |
+| 문서 — 엔드포인트 이름·정렬 미명시 | 커넥터 표·STEP 3 호출에 `intent_finder/keyword_list` · `sort="volume_avg"` · `order="desc"`와 명시 이유(절단 판정 전제) | 선크림 실행의 intent_finder 요청 본문 |
+| 문서 — «~없는» 부정형 표현의 층 배정 지침 없음 | STEP 4 «부정형 표현»: 해결책 층에 먼저 선언하거나 문제 층에 부정 전방탐색 · «무기자차»는 부정형 아님 | — |
+
+회귀: `selftest_ideas.py` V13(universe·merge·문서 순서).
+
 ## v1.2.1 (2026-09-29 · lm-skills 1.6.0)
 
 - 변경 이력을 SKILL.md 에서 이 파일로 옮기고, 판 번호를 frontmatter `metadata.version` 으로 옮겼다. 절차·스크립트·산출물은 바뀌지 않았다.

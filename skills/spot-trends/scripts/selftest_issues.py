@@ -190,7 +190,7 @@ def main():
             if ohdr != doc_columns("trend_issue_only_{category}.csv"):
                 F.append(("I8", "SKILL.md 미확인 CSV 컬럼 ≠ 실제 출력", str(ohdr)))
             # I7 — 알림
-            base = [WA, "sig.csv", "--category", "합성 캠핑의자", "--queried-at", "2026-09-29"]
+            base = [WA, "sig.csv", "--category", "합성 캠핑의자", "--queried-at", "2026-09-29", "--no-refmonth-check"]
             rc, out = run(base + ["-o", "a0.md"], t)
             if rc == 0:
                 F.append(("I7", "이슈 근거가 있는데 --issue-only 없이 알림을 썼다(미판정 후보가 조용히 빠진다)", ""))

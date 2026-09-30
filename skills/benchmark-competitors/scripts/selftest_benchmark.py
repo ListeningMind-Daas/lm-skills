@@ -16,6 +16,8 @@
      P1-2 구글 지표 공유 행(오타 별칭 포함)을 하한·월 패널에서 한 번만 센다 · 결측 오타가 yoy를 지우지 않는다
      P1-3 브랜드명 단독 비중 컬럼 · P1-4 테마 정규식이 브랜드+모델 연결부에서 가짜 매칭하지 않는다
      P2-1 점유율 하한·상한을 범위(«~»)로 적지 않는다 · P2-2 review-config가 별칭을 brands에 넣는다
+  5. v1.3 회귀 (2026-09-30 선크림 실측): 구글 지표만 공유하고 네이버 볼륨이 다른 행(네이버 분리 변형)을
+     2단에 따로 넣고, 하한·월 패널에 네이버 볼륨을 더한다(헤라 순위 하한 5위 ↔ 상한 2위 뒤집힘 재현 방지)
 API 호출도 크레딧도 필요 없다.
 
     python3 scripts/selftest_benchmark.py        # 스킬 폴더에서 실행
@@ -145,7 +147,7 @@ def regressions(tmp):
         f.append(("P0-1", "1단 실제 0인 메시지 칸을 경고하지 않았다", ""))
     # P1-2 · P2-6
     bd = {r["brand"]: r for r in read(tmp / "out_r" / "bounds_r.csv")}
-    lo_exp = 300000 + 15000 + 6000    # 나이키(+나이키도스) · nike(+nikep) · 나이키 할인 — 묶음 최댓값의 합
+    lo_exp = 300000 + 120 + 15000 + 6000    # 나이키 + 나이키도스 네이버 120(네이버 분리) · nike(+nikep) · 나이키 할인
     if bd["나이키"]["volume_12m_lo"] != str(lo_exp):
         f.append(("P1-2", f"구글 공유 행을 하한에서 여러 번 셌다: {bd['나이키']['volume_12m_lo']} ≠ {lo_exp}", ""))
     hi_exp = 60000 + 240000 + 120 + 12000 + 3000 + 0 + 1200 + 4800
@@ -156,7 +158,8 @@ def regressions(tmp):
     if nk["month_complete"] != "1" or not nk["sov_brandset"]:
         f.append(("P2-6", "결측 이력이 있는 비대표 오타 변형이 월 패널을 비웠다", str(nk)))
     km = {r["keyword"]: r for r in read(tmp / "out_r" / "keyword_map_r.csv")}
-    if km["nikep"]["representative"] != "0" or km["나이키도스"]["dup_basis"] != "구글 지표 공유":
+    if km["nikep"]["representative"] != "0" or km["nikep"]["dup_basis"] != "구글 지표 공유" \
+            or not km["나이키도스"]["dup_basis"].startswith("네이버 분리"):
         f.append(("P1-2", "구글 공유 행이 대표로 남았거나 dup_basis가 없다",
                   str({k: (km[k]["representative"], km[k]["dup_basis"]) for k in ("nikep", "나이키도스")})))
     # P1-3
@@ -186,6 +189,32 @@ def regressions(tmp):
         f.append(("P1-1", "stage2가 테마 커버리지·미반환을 보고하지 않는다", p.stdout[-300:]))
     if "nikep" in picked or "나이키도스" in picked:
         f.append(("P1-2", "구글 공유 행이 2단 대상에 들어갔다", str(picked)))
+    # v1.3 P0 네이버 분리 변형 — 구글만 공유하고 네이버 볼륨이 다른 쌍(헤라 선크림·썬크림 실측 비율)
+    cfg_n = {"rules": {"변형치환": {}}, "brands": ["헤라", "달바"], "category_terms": ["선크림"],
+             "themes": [], "no_match": {"with_brand": "브랜드·제품명", "without_brand": "코어·일반"}}
+    (tmp / "n.json").write_text(json.dumps(cfg_n, ensure_ascii=False), encoding="utf-8")
+    n2 = [mrow("헤라 썬크림", 25400, 231480, cpc=0.38, ci=95), mrow("헤라 선크림", 25400, 123840, cpc=0.38, ci=95),
+          mrow("달바 선크림", 30000, 300000, cpc=0.5, ci=90), mrow("선크림", 219000, 338304, cpc=1.0, ci=93)]
+    n1 = [{"keyword": d["keyword"], "ads_metrics": d["ads_metrics"]} for d in n2]
+    (tmp / "n_s1.json").write_text(json.dumps({"data": n1}, ensure_ascii=False), encoding="utf-8")
+    (tmp / "n_s2.json").write_text(json.dumps({"data": n2}, ensure_ascii=False), encoding="utf-8")
+    p = run(HERE / "plan_queries.py", "stage2", "n_s1.json", "--config", "n.json", "-o", "n_pick.json")
+    npick = json.load(open(tmp / "n_pick.json", encoding="utf-8")) if not p.returncode else []
+    if "헤라 선크림" not in npick or "네이버 분리" not in p.stdout:
+        f.append(("v1.3-P0", f"네이버 볼륨이 다른 구글 공유 행을 2단에 따로 넣지 않았다: {npick}", p.stdout[-300:]))
+    p = run(HERE / "brand_benchmark.py", "n_s2.json", "--config", "n.json", "--category", "n", "--stage1", "n_s1.json",
+            "--queried-at", QUERIED, "--outdir", "out_n")
+    if p.returncode:
+        f.append(("v1.3-P0", "네이버 분리 픽스처 실행 실패", (p.stdout + p.stderr)[-300:]))
+    else:
+        nb = {r["brand"]: r for r in read(tmp / "out_n" / "bounds_n.csv")}
+        if nb["헤라"]["volume_12m_lo"] != str(25400 + 231480 + 123840) or nb["헤라"]["rank_flip"] != "no":
+            f.append(("v1.3-P0", "네이버 분리 변형의 네이버 볼륨이 하한에 빠졌다(순위 뒤집힘 재현)",
+                      str({k: nb["헤라"][k] for k in ("volume_12m_lo", "volume_12m_hi", "rank_flip")})))
+        nm = next(r for r in read(tmp / "out_n" / "benchmark_n.csv") if r["month"] == "2025-07" and r["brand"] == "헤라")
+        exp = 25400 // 12 + 231480 // 12 + 123840 // 12
+        if nm["volume"] != str(exp):
+            f.append(("v1.3-P0", f"월 패널에 네이버 분리 변형의 네이버 볼륨이 더해지지 않았다: {nm['volume']} ≠ {exp}", ""))
     run(HERE / "plan_queries.py", "review-config", "--config", "r.json", "-o", "r_review.json")
     rv = json.load(open(tmp / "r_review.json", encoding="utf-8"))
     if "nike" not in rv.get("brands", []):
@@ -272,7 +301,7 @@ def main():
             nb = next(r for r in b if r["month"] == "2026-06" and r["bucket_type"] == "nonbrand")
             if not nb["sov_category"]:
                 fails.append(("brand_benchmark", "논브랜드 버킷의 카테고리 점유율이 없다 (T8)", ""))
-            if any(r["series_basis"] != "대표 행(하한 기준)" for r in b):
+            if any(r["series_basis"] != "대표 행 + 네이버 분리 변형(하한 기준)" for r in b):
                 fails.append(("brand_benchmark", "월 패널에 series_basis(대표 행·하한 기준) 표시가 없다", ""))
             bd = {r["brand"]: r for r in read(files["bounds"])}
             h12 = bd.get("호카", {})
@@ -303,7 +332,7 @@ def main():
                 fails.append(("brand_benchmark", "제외 규칙이 keyword_map에 표시되지 않음", ""))
             md = (out / f"gap_alert_{cat}.md").read_text(encoding="utf-8")
             for need in ("데이터 기준월 2026-07", "조회일 2026-09-28", "지연", "마지막 달", "메시지 공백", "[데이터 공백]",
-                         "하한", "상한", "대표 행(하한 기준)"):
+                         "하한", "상한", "대표 행 + 네이버 분리 변형(하한 기준)"):
                 if need not in md:
                     fails.append(("brand_benchmark", f"gap_alert에 «{need}» 없음", ""))
             if "[파생]" in md:

@@ -2,8 +2,8 @@
 """trend_alert_{category}.md 작성 — 스크립트 출력(CSV·issue_meta.json)에서만 값을 옮긴다(수기 수치 없음). SKILL.md STEP 8.
 
     python3 write_alert.py trend_signals.csv --category "KR 선스틱" --queried-at 2026-09-28 \\
-        --gate 3000 [--include-last-month] [--note "가정: …"] -o trend_alert_sunstick.md \\
-        [--issue-only trend_signals_issue_only.csv --issue-meta issue_meta.json]
+        --gate 3000 --refmonth-check check_refmonth.txt [--include-last-month] [--note "가정: …"] \\
+        -o trend_alert_sunstick.md [--issue-only trend_signals_issue_only.csv --issue-meta issue_meta.json]
 
 절 구성 — ① 헤더(기준월·조회일·지연·게이트·등급 기준·작은 풀 경고·확산 폭 강도) ② 수집 사실(issue_meta: 호출·넓힘·
 limit 절단·띄어쓴 시드·크레딧 대조·범위 밖·스크린·병합) ③ 판정 행 전체(등급 유무와 관계없이 전부 · 수치 병기)
@@ -12,9 +12,12 @@ limit 절단·띄어쓴 시드·크레딧 대조·범위 밖·스크린·병합)
 
 신호 CSV에 이슈 근거(issue_*)가 붙어 있는데 --issue-only·--issue-meta가 없으면 멈춘다(미판정 후보·수집 사실이 조용히 빠지는 것을 막는다).
 기준월은 CSV의 data_ref_month(= 응답 monthly_volume 최신 월)에서 읽고, 지연은 조회일과의 차로 계산한다.
-«잠정»은 trend_signals.py가 두 모드(마지막 달 제외·포함)를 비교해 붙인 표시를 그대로 옮긴다.
+«잠정»은 trend_signals.py가 두 모드(마지막 달 제외·포함)를 비교해 붙인 표시를 그대로 옮기고, 근거로 다른 모드의
+등급·성장률(growth_other_mode)을 비고에 함께 적는다. 마지막 달 완결성 의심 건수는 check_refmonth.py 출력
+(--refmonth-check · 사람용 텍스트 또는 --json)에서 읽어 헤더에 싣는다(SKILL.md STEP 4). 같은 표기 그룹 안의 성장률
+부호 갈림(group_growth_split)은 헤더 경고와 비고에 싣는다.
 """
-import argparse, csv, json, sys
+import argparse, csv, json, re, sys
 
 SMALL_POOL_ABS, SMALL_POOL_SHARE = 20, 0.25   # trend_signals.py와 같은 [가정]
 WEAK_SPREAD = 50                               # [가정] 후보가 이보다 적으면 확산 폭은 약한 근거
@@ -41,6 +44,21 @@ def pp(r):
 
 def issue_cell(r):
     return f"{r['issue_score']} · {r['issue_n_dates']}일" if r.get("issue_score") else "—"
+
+
+def read_refmonth(path):
+    """check_refmonth.py 출력 → (검사 행 수, 의심 행 수, 의심 목록 문자열들). --json 출력과 사람용 텍스트 모두 받는다."""
+    txt = open(path, encoding="utf-8").read()
+    if txt.lstrip().startswith("{"):
+        o = json.loads(txt)
+        fl = [f"{k}: {p:,} → {c:,}" for k, _, p, c in o.get("flagged", [])]
+        return o.get("checked"), o.get("last_month_suspect"), fl
+    m1 = re.search(r"\((\d+)행 검사\)", txt)
+    m2 = re.search(r"이상 의심: (\d+)행", txt)
+    if not (m1 and m2):
+        sys.exit(f"{path}에서 마지막 달 완결성 결과를 읽지 못했다 — check_refmonth.py 출력(또는 --json)을 줄 것")
+    fl = [ln.strip() for ln in txt.splitlines() if re.match(r"\s{4}\S.*: [\d,]+ → [\d,]+", ln)]
+    return int(m1.group(1)), int(m2.group(1)), fl
 
 
 def meta_lines(meta):
@@ -76,6 +94,10 @@ def main():
     ap.add_argument("--gate", type=int, default=3000, help="trend_signals.py에 준 --gate 값")
     ap.add_argument("--include-last-month", action="store_true", help="trend_signals.py를 이 옵션으로 돌렸으면 함께 준다")
     ap.add_argument("--note", default="", help="가정·범위 제외 등 한 줄")
+    ap.add_argument("--refmonth-check", help="check_refmonth.py 출력 파일(텍스트 또는 --json) — 마지막 달 완결성 의심 건수를 "
+                                             "헤더에 싣는다(STEP 4 필수 · 없으면 멈춘다)")
+    ap.add_argument("--no-refmonth-check", action="store_true",
+                    help="완결성 점검 없이 쓴다 — 헤더에 «미점검 [데이터 공백]»이 적힌다")
     ap.add_argument("--issue-only", help="trend_signals.py --evidence가 쓴 «이슈 신호만 · 검색량 미확인» CSV")
     ap.add_argument("--issue-meta", help="issue_candidates.py가 쓴 issue_meta.json — 수집 사실 절")
     ap.add_argument("-o", "--out", required=True)
@@ -91,6 +113,9 @@ def main():
     if has_issue and not (a.issue_only and a.issue_meta):
         sys.exit("신호 CSV에 이슈 근거가 있다 — --issue-only <..._issue_only.csv>와 --issue-meta <issue_meta.json>을 함께 줘야 "
                  "미판정 이슈 후보와 수집 사실(절단·넓힘·크레딧)이 빠지지 않는다")
+    if not a.refmonth_check and not a.no_refmonth_check:
+        sys.exit("--refmonth-check <check_refmonth.py 출력>을 줘야 한다 — 마지막 달 완결성 의심 건수는 알림에 들어가야 한다"
+                 "(STEP 4). 점검 없이 쓰려면 --no-refmonth-check")
     meta = json.load(open(a.issue_meta, encoding="utf-8")) if a.issue_meta else None
     n_gate = sum(1 for r in R if r["gated_out"] == "게이트 미달")
     n_unc = sum(1 for r in R if r["gated_out"] == "계산 불가")
@@ -119,11 +144,28 @@ def main():
          + (", ".join(f"{' / '.join(r['keyword'] for r in rs)} (전년 동기 창 하한 {int(rs[0]['group_prev_year_lo']):,} ~ "
                       f"상한 {int(rs[0]['group_prev_year_hi']):,}건 [추정])" for rs in multi.values()) or "없음"),
          f"- 두 모드 비교: 등급 보유 {sum(1 for r in R if r['grade'] or r['grade_other_mode'])}행 중 "
-         f"«잠정» {sum(1 for r in R if r['provisional'])}행 (등급·성장률 부호가 모드에 따라 달라짐)"]
-    if len(live) < max(SMALL_POOL_ABS, SMALL_POOL_SHARE * len(R)):
+         f"«잠정» {sum(1 for r in R if r['provisional'])}행 (등급·성장률 부호가 모드에 따라 달라짐 — 근거는 판정 표 비고의 "
+         f"«{'마지막 달 제외' if a.include_last_month else '마지막 달 포함'} 모드» 값)"]
+    if a.refmonth_check:
+        chk, sus, fl = read_refmonth(a.refmonth_check)
+        L.append(f"- 마지막 달({ref}) 완결성: {chk}행 검사 중 의심 {sus}행 [실제 데이터 — check_refmonth]"
+                 + (" — " + " · ".join(fl[:5]) if fl else "")
+                 + (" · 판정은 마지막 달 제외 모드라 직접 영향 없음" if sus and not a.include_last_month else "")
+                 + (" · ⚠️ 마지막 달 포함 모드로 판정했다 — 의심 행의 등급은 잠정으로 읽는다" if sus and a.include_last_month else ""))
+    else:
+        L.append(f"- 마지막 달({ref}) 완결성: 미점검 [데이터 공백] (--no-refmonth-check)")
+    splits = {r["canonical"]: r["group_growth_split"] for r in R if r.get("group_growth_split")}
+    if splits:
+        L.append(f"- ⚠️ 같은 표기 그룹 안에서 성장률 부호가 갈린다 {len(splits)}그룹 [추정]: "
+                 + " · ".join(splits.values())
+                 + " — 그룹(카테고리) 전체의 상승이 아니라 표기 이동일 수 있다. 등급은 행 단위이므로 «○○가 뜬다»로 일반화하지 않는다")
+    small = len(live) < max(SMALL_POOL_ABS, SMALL_POOL_SHARE * len(R))
+    if small:
         L.append(f"- ⚠️ 판정 풀이 작다: {len(live)}/{len(R)}행 [가정 기준 {SMALL_POOL_ABS}행 또는 {SMALL_POOL_SHARE:.0%}] — "
                  "등급은 이 몇 행 안의 판단이다. 비수기 계절 품목이면 trend_signals.py --window 12로 다시 계산해 본다(0크레딧)")
-    if n_cand < WEAK_SPREAD or n_diff < len(live):
+        L.append(f"- ⚠️ 확산 폭은 이번에 의미가 없다: 판정 {len(live)}행 안에서 토큰을 공유하는 몇 행의 비율이라 "
+                 "0·0.5·1 같은 값만 나온다 — 등급 해석·순위에 쓰지 않는다 [가정]")
+    elif n_cand < WEAK_SPREAD or n_diff < len(live):
         L.append(f"- 확산 폭은 약한 근거: 후보 {n_cand}개(기준 {WEAK_SPREAD}개 [가정]) · 확산 계산된 판정 행 {n_diff}/{len(live)}"
                  " — 확산은 후보군 안에서만 잰다")
     if a.note:
@@ -153,9 +195,16 @@ def write_tables(a, R, live, graded):
     L = ["", f"## 판정 행 전체 ({len(live)}행 — 등급 유무와 관계없이)", "",
          "| 등급 [추정] | 키워드 | 성장률 YoY | 가속도(%p) | 지속(개월) | 확산 | 최근 창 | 전년 동기 창 | 이슈 점수 · 인덱스일 수 | 비고 |",
          "|---|---|---:|---:|---:|---:|---:|---:|---:|---|"]
+    other = "마지막 달 제외" if a.include_last_month else "마지막 달 포함"
     for r in sorted(live, key=lambda r: (GRADE_ORDER.get(r["grade"], 9), -float(r["growth"] or 0))):
+        prov = r["provisional"]
+        if prov:
+            og = r.get("growth_other_mode")
+            prov += (f" ({other} 모드: 등급 {r['grade_other_mode'] or '없음'} · 성장률 "
+                     + (f"{float(og):+.1%}" if og not in ("", None) else "계산 불가") + ")")
+        split = f"그룹 내 부호 갈림({r['group_growth_split']})" if r.get("group_growth_split") else ""
         note = " · ".join(x for x in (r["grade_floor"], "" if r["grade"] or r["grade_floor"] else "기준 미달",
-                                      r["provisional"], r.get("grade_basis", "")) if x)
+                                      prov, split, r.get("grade_basis", "")) if x)
         L.append(f"| {r['grade'] or '—'} | {r['keyword']} | {pct(r['growth'])} | {pp(r)} | {r['persistence_months']} | "
                  f"{r['diffusion'] or '—'} | {num(r.get('volume_window'))} | {num(r['volume_prev_year_window'])} | "
                  f"{issue_cell(r)} | {note} |")

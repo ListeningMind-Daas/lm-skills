@@ -42,7 +42,8 @@ SIGNAL_COLS = ["keyword", "canonical", "dup_of", "volume_prev_year_window", "mis
                "persistence_months", "diffusion", "signal_score", "grade", "grade_floor", "grade_other_mode",
                "provisional", "gated_out", "data_ref_month", "window_end"]
 ISSUE_COLS = ["issue_score", "issue_n_dates", "issue_summary_ai", "issue_source_checked", "issue_sources"]
-EXTRA_COLS = ["volume_window", "volume_latest", "first_active_month", "grade_basis"]
+EXTRA_COLS = ["volume_window", "volume_latest", "first_active_month", "grade_basis",
+              "growth_other_mode", "group_growth_split"]
 ISSUE_ONLY_COLS = ["keyword", "canonical", "reason", "issue_score", "issue_n_dates", "index_date_last",
                    "after_ref_month", "summary_ai", "source_checked", "source_links", "data_ref_month",
                    "volume_avg", "screen"]
@@ -273,6 +274,15 @@ def main():
         c, v = r["canonical"], r[main_k]["base"]
         g_lo[c] = max(g_lo.get(c, 0), v); g_hi[c] = g_hi.get(c, 0) + v; g_n[c] += 1
 
+    # 같은 canonical 그룹 안에서 표기별 성장률 부호가 갈리면(썬크림 +17% / 선크림 −11%) 그룹 전체 방향이 아니라
+    # 표기 이동일 수 있다 — 그룹 행마다 표기별 값을 남기고 경고한다(한쪽을 고르지 않는다)
+    g_growth = defaultdict(list)
+    for r in rows:
+        if not r["dup_of"] and r[main_k]["status"] == "" and r[main_k]["growth"] != "":
+            g_growth[r["canonical"]].append((r["keyword"], r[main_k]["growth"]))
+    g_split = {c: " / ".join(f"{k} {g:+.1%}" for k, g in xs) for c, xs in g_growth.items()
+               if len(xs) > 1 and min(g for _, g in xs) < 0 < max(g for _, g in xs)}
+
     out = []
     for r in rows:
         m, o = r[main_k], r[alt_k]
@@ -298,6 +308,8 @@ def main():
             "data_ref_month": data_ref, "window_end": ref,
             "volume_window": m["cur"], "volume_latest": r["_latest"], "first_active_month": r["_first"],
             "grade_basis": m["basis"],
+            "growth_other_mode": o["growth"],
+            "group_growth_split": "" if r["dup_of"] else g_split.get(r["canonical"], ""),
         })
     for r in out:
         r.update({c: "" for c in ISSUE_COLS})
@@ -327,6 +339,9 @@ def main():
     print(f"canonical {len(g_lo)}그룹 (표기변형 {sum(g_n.values()) - len(g_lo)}행 · 같은 검색의 중복 {n_dup}행은 한 번만) · "
           f"전년 동기 창 볼륨: 하한 {sum(g_lo.values()):,} ~ 상한 {sum(g_hi.values()):,}  "
           "※ 하한=그룹 내 최댓값 · 상한=그룹 내 합 [추정 — 규칙 기반 집계]")
+    if g_split:
+        print(f"⚠️ 같은 표기 그룹 안에서 성장률 부호가 갈린다 {len(g_split)}그룹 [추정] — 그룹 전체의 상승·하락이 아니라 "
+              "표기 이동일 수 있다(등급은 행 단위): " + " · ".join(f"{c}: {v}" for c, v in g_split.items()))
     for c in sorted(multi, key=lambda c: -g_lo[c])[:10]:
         kws = [r["keyword"] for r in out if r["canonical"] == c and not r["dup_of"]]
         print(f"  그룹 {c}: {' / '.join(kws)} — 하한 {g_lo[c]:,} ~ 상한 {g_hi[c]:,}건 [추정]")

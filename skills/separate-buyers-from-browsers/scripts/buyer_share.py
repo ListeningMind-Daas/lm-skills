@@ -84,6 +84,18 @@ def main():
     if bad:
         sys.exit(f"tier가 없거나 잘못된 클래스: {bad} — 허용값 {TIERS}")
     bmark = brand_marker(cfg.get("brands", []), subs)
+    # 브랜드 사전에 판매 채널명이 들어가면(px·올리브영·쿠팡) 채널 지명 검색이 «브랜드 포함»으로 가고, 채널 마커와 함께 걸린
+    # 검색은 거래 의도이면서 브랜드 행이 되어 «논브랜드 안 거래 의도»에서 빠진다(2026-09-30 선크림: map-your-market 사전의 px)
+    chan_brands = []
+    for b in cfg.get("brands", []):
+        bc, bb = canon_bounds(b, subs)
+        hit = [n for n, t, m in classes if t == "buyer" and m.hit(bc, bb)]
+        if hit:
+            chan_brands.append(f"{b}({'·'.join(hit)})")
+    if chan_brands:
+        print(f"⚠️ 브랜드 사전에 거래 마커(채널·가격)에도 걸리는 이름이 있다: {', '.join(chan_brands)} — 판매 채널명은 brands에서 빼고 "
+              "채널 지명 클래스에만 둔다(그대로 두면 채널 검색이 브랜드 행이 되어 논브랜드 거래 의도가 줄어든다)", file=sys.stderr)
+    a.chan_brands = chan_brands
     cat = cfg.get("category") or {}
     cat_ex = Marker(cat["exclude"]) if cat.get("exclude") else None
     cat_in = Marker(cat["pattern"]) if cat.get("pattern") else None
@@ -255,6 +267,9 @@ def report(a, out, rows, s2_req, s2_cost, ref_month, lm):
          "중복 판정은 지표 완전 일치 규칙이 보는 만큼이다",
          f"- 카테고리 밖(category 경계) {len(outside)}행 · {int(sum(num(r['volume_total']) or 0 for r in outside)):,}건 — 분포에서 제외",
          f"- 볼륨 결측 그룹: {len(missing_vol)}개 [데이터 공백] — 분모에서 제외", ""]
+    if getattr(a, "chan_brands", None):
+        L += [f"- ⚠ 브랜드 사전에 거래 마커(채널·가격)에도 걸리는 이름: {', '.join(a.chan_brands)} — 판매 채널명이면 brands에서 빼고 "
+              "다시 돌린다. 그대로면 그 채널 검색이 «브랜드 포함»으로 가서 논브랜드 거래 의도가 과소집계된다 [가정]", ""]
     L += reconcile(a, rows)
     L += ["## 핵심 수치 [추정 · 검색량 기준 근사 · 검색 ≠ 구매]", "",
           "비중은 하한·상한 각자의 분모로 계산한 **두 값**이다(범위가 아니다 — 하한 기준이 더 클 수 있다).", "",

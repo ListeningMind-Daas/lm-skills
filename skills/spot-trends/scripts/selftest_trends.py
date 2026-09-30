@@ -9,6 +9,9 @@
   두 모드 비교 — 마지막 달에 따라 부호가 뒤집히는 행은 «잠정»
   P0 판정 풀이 작으면(기본 10행 미만) 백분위 대신 절대 기준 · 알림은 판정 행 전체와 작은 풀 경고를 싣는다
   같은 검색의 중복(시계열 동일)은 한 번만 · gated_out 사유 분리 · SKILL.md 컬럼 목록 = 실제 출력
+  V16 (2026-09-30 선크림 실측) 알림이 마지막 달 완결성 의심 건수(check_refmonth)를 싣고, 없으면 멈춘다 ·
+      «잠정» 근거(다른 모드 등급·성장률 growth_other_mode)를 CSV·알림에 싣는다 ·
+      같은 표기 그룹 안의 성장률 부호 갈림(group_growth_split)을 CSV·알림에 경고한다 · 작은 풀이면 확산 폭 무의미 경고
 
     python3 scripts/selftest_trends.py        # 스킬 폴더에서 실행
 """
@@ -144,23 +147,49 @@ def main():
             fails.append(("P0", "작은 풀에서 +40%·지속 11개월 키워드가 절대 기준 A를 받지 못했다",
                           f"{g.get('grade')} · {g.get('grade_basis')} · {g.get('signal_score')}"))
         rc, out = run([str(HERE / "write_alert.py"), "p0.csv", "--category", "합성 작은 풀", "--queried-at", "2026-09-29",
-                       "-o", "p0.md"], tmp)
+                       "--no-refmonth-check", "-o", "p0.md"], tmp)
         md = (tmp / "p0.md").read_text(encoding="utf-8") if not rc else ""
         if "판정 행 전체 (2행" not in md or "| 무중력 의자 |" not in md or "하한 미달" not in md \
                 or "판정 풀이 작다" not in md or "절대 기준" not in md:
             fails.append(("P0", "알림이 판정 행 전체(등급 없는 행 포함)·작은 풀 경고·절대 기준을 싣지 않았다", md[:300]))
 
-        # write_alert — CSV 값만으로 알림 작성
+        # write_alert — CSV 값만으로 알림 작성 (STEP 4 완결성 점검 출력을 함께 준다)
+        rc, rm = run([str(HERE / "check_refmonth.py"), "all.json", "--queried-at", "2026-09-28"], tmp)
+        (tmp / "refmonth.txt").write_text(rm, encoding="utf-8")
         rc, out = run([str(HERE / "write_alert.py"), "sig.csv", "--category", "합성", "--queried-at", "2026-09-28",
-                       "-o", "alert.md"], tmp)
+                       "--refmonth-check", "refmonth.txt", "-o", "alert.md"], tmp)
         if rc:
             fails.append(("write_alert", "비정상 종료", out[-300:]))
         else:
             md = (tmp / "alert.md").read_text(encoding="utf-8")
             if "2026-08" not in md or "지연 **1개월**" not in md or "잠정" not in md:
                 fails.append(("write_alert", "기준월·지연·잠정이 알림에 없다", md[:300]))
+            if not re.search(r"완결성: \d+행 검사 중 의심 \d+행", md):
+                fails.append(("V16", "알림에 마지막 달 완결성 의심 건수가 없다", md[:400]))
+            if not re.search(r"잠정 \(마지막 달 포함 모드: 등급 \S+ · 성장률 [+-]", md):
+                fails.append(("V16", "«잠정» 근거(다른 모드 등급·성장률)가 알림 비고에 없다", ""))
         rc, out = run([str(HERE / "write_alert.py"), "sig.csv", "--category", "합성", "--queried-at", "2026-09-28",
-                       "--include-last-month", "-o", "x.md"], tmp)
+                       "-o", "noref.md"], tmp)
+        if rc == 0 or "--refmonth-check" not in out:
+            fails.append(("V16", "완결성 점검 출력 없이 알림을 썼다", out[-200:]))
+        # V16 — 같은 표기 그룹 안의 성장률 부호 갈림 (썬크림 ↑ / 선크림 ↓)
+        sp = [row("썬크림", grow(20000, 1.2)), row("선크림", grow(20000, 0.85)), row("톤업 선크림", grow(9000, 1.1))]
+        (tmp / "sp.json").write_text(json.dumps({"data": sp}, ensure_ascii=False), encoding="utf-8")
+        rc, out = run([S, "sp.json", "-o", "sp.csv", "--rules", '{"썬":"선"}'], tmp)
+        with open(tmp / "sp.csv", encoding="utf-8-sig") as f:
+            spr = {r["keyword"]: r for r in csv.DictReader(f)}
+        if rc or "썬크림 +" not in spr.get("선크림", {}).get("group_growth_split", "") \
+                or spr.get("톤업 선크림", {}).get("group_growth_split") or "부호가 갈린다" not in out \
+                or spr.get("썬크림", {}).get("growth_other_mode") in ("", None):
+            fails.append(("V16", "그룹 내 성장률 부호 갈림·다른 모드 성장률이 CSV에 없다", str(spr.get("선크림"))[:200]))
+        rc, out = run([str(HERE / "write_alert.py"), "sp.csv", "--category", "합성 갈림", "--queried-at", "2026-09-28",
+                       "--no-refmonth-check", "-o", "sp.md"], tmp)
+        smd = (tmp / "sp.md").read_text(encoding="utf-8") if not rc else ""
+        if "표기 그룹 안에서 성장률 부호가 갈린다" not in smd or "확산 폭은 이번에 의미가 없다" not in smd \
+                or "미점검 [데이터 공백]" not in smd:
+            fails.append(("V16", "알림에 부호 갈림·작은 풀 확산 무의미·미점검 표시가 없다", smd[:300]))
+        rc, out = run([str(HERE / "write_alert.py"), "sig.csv", "--category", "합성", "--queried-at", "2026-09-28",
+                       "--include-last-month", "--no-refmonth-check", "-o", "x.md"], tmp)
         if rc == 0:
             fails.append(("write_alert", "모드 표시가 CSV와 어긋나는데 멈추지 않았다", ""))
 

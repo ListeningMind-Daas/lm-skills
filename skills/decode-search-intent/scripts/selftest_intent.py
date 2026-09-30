@@ -22,6 +22,10 @@
   P1-4 pick 층별 표본은 시드 밖 층 기준 — 주 층 L3인 «무릎 통증 러닝화»가 L1 표본으로 뽑힌다
   P1-5 upstream 판정 — 절단 + 시드 밖 L1·L2 그룹 < 10이면 «발동»
   P2   경계 밖(exclude) 행 제외 · 일치율 표본 경고 · 2단 미반환 표기 · 문서에 «약 2개월»·[파생] 없음
+  회귀(2026-09-30 선크림 실측, v1.3):
+  V13-1 층 포함률 L5 «시드 표현 제외» 열이 0.0%로 고정되지 않는다(브랜드가 시드에 없으면 포함)
+  V13-2 브랜드 행 안의 L1 표현도 L1 층 표본 후보다(«나이키 무릎 통증»이 L1 표본으로 뽑힌다)
+  V13-3 pick이 단계 분류 그룹을 --min-stage-groups까지 보강하고 수를 출력한다
 
 합성 픽스처만 쓴다 — API 호출·크레딧 없음.
 
@@ -208,6 +212,35 @@ def main():
                               f"{mb['두피 가려움']['layer']} / {mb['려 샴푸']['layer']}"))
             if "브랜드 가드" not in out2:
                 fails.append(("P1-2", "가드로 막은 행 수를 출력하지 않음", out2[-200:]))
+
+        # V13 — 선크림 실측 회귀 (별도 미니 픽스처)
+        v13 = tmp / "v13"; v13.mkdir()
+        rows13 = [ki("러닝화", 100000), ki("나이키 러닝화", 80000), ki("나이키 무릎 통증", 9000),
+                  ki("러닝화 무릎", 800), ki("러닝화 추천", 5000), ki("러닝화 가격", 4000), ki("러닝화 고르는법", 3000),
+                  ki("러닝화 할인", 2000), ki("러닝화 비교", 1500), ki("러닝화 세탁", 1200)]
+        (v13 / "m.json").write_text(json.dumps({"data": rows13}, ensure_ascii=False), encoding="utf-8")
+        (v13 / "seeds.json").write_text(json.dumps(["러닝화"], ensure_ascii=False), encoding="utf-8")
+        shutil.copyfile(SKILL / "assets" / "intent_dict.example.json", v13 / "d.json")
+        rc, out = run([f"{S}/build_universe.py", "--metrics", "m.json", "--themes", "d.json", "--seeds", "seeds.json",
+                       "-o", "u.csv"], v13)
+        rc2, out2 = run([f"{S}/intent_layers.py", "pick", "--universe", "u.csv", "--dict", "d.json",
+                         "--seeds", "seeds.json", "--top", "2", "--per-layer", "1", "--min-stage-groups", "4",
+                         "-o", "g.json"], v13)
+        rc3, out3 = run([f"{S}/intent_layers.py", "report", "--universe", "u.csv", "--dict", "d.json",
+                         "--seeds", "seeds.json", "-o", "l.csv", "--report", "s.md"], v13)
+        if rc or rc2 or rc3:
+            fails.append(("V13", "미니 픽스처 실행 실패", (out + out2 + out3)[-300:]))
+        else:
+            g13 = json.load(open(v13 / "g.json", encoding="utf-8"))
+            if "나이키 무릎 통증" not in g13:
+                fails.append(("V13-2", "브랜드 행 안의 L1 표현이 L1 층 표본에서 빠졌다", str(g13)))
+            staged = [k for k in g13 if re.search("추천|가격|고르는법|할인|비교|세탁", k)]
+            if len(staged) < 4 or "단계 분류 그룹" not in out2 or "단계 대조 보강" not in out2:
+                fails.append(("V13-3", "pick이 단계 분류 그룹을 보강하지 않았다", out2[-300:]))
+            md13 = (v13 / "s.md").read_text(encoding="utf-8")
+            m13 = re.search(r"\| L5 브랜드 \| [\d.]+% \| [\d.]+% \| ([\d.]+)% \|", md13)
+            if not m13 or float(m13.group(1)) == 0.0:
+                fails.append(("V13-1", "층 포함률 L5 «시드 표현 제외»가 0.0%다", md13[-600:]))
 
         # P2 — 문서 규율: 고정 지연 문구·[파생] 라벨 금지
         for f in [SKILL / "SKILL.md", HERE / "intent_layers.py"]:

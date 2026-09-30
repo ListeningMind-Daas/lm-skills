@@ -3,7 +3,7 @@
 
 이 스크립트는 validate-product-ideas 고유 스크립트다(공유 사본이 아니다). API를 부르지 않는다(0크레딧).
 
-세 하위 명령:
+다섯 하위 명령:
 
   seeds   — 1단(ads_metrics) 응답으로 시드를 «살아 있음 / 0건 / 미반환»으로 가른다 (STEP 2)
             요청 문자열과 응답 문자열은 다를 수 있다(`제로슈가 아이스크림` → `제로 슈가 아이스크림`).
@@ -11,6 +11,16 @@
             시드를 죽었다고 판정한다. 죽은 시드도 1단에서 과금됐다(요청 키워드 수 기준).
       python3 scripts/prepare_stages.py seeds --seeds seeds_by_layer.json \\
           --metrics stage1_seeds.json --layers layers.json -o seed_check.json
+
+  universe — 확장 반환 중 1단 시드 응답에 없는 키워드를 유니버스 볼륨 요청 목록으로 만든다 (STEP 3 끝)
+            대조는 canonical — 이미 시드로 볼륨을 받은 키워드에 다시 1크레딧을 내지 않는다.
+      python3 scripts/prepare_stages.py universe --seed-metrics stage1_seeds.json --layers layers.json \
+          --expansion if_저당아이스크림.json --expansion if_다이어트아이스크림.json -o universe_request.json
+
+  merge   — 1단 시드 응답 + 유니버스 응답을 하나로 합친다 → metrics_stage1.json (STEP 3 끝)
+            metrics_stage1.json = «시드 응답(stage1_seeds.json) + 유니버스 응답(stage1_universe.json)». 같은 키워드는
+            한 번만(먼저 준 파일 우선). STEP 3 coverage_curve · STEP 3.5 review · STEP 5 build_universe가 이 파일을 읽는다.
+      python3 scripts/prepare_stages.py merge stage1_seeds.json stage1_universe.json -o metrics_stage1.json
 
   review  — intent_finder 반환을 검토 시트로 펼친다 (STEP 3.5 · 2단 전)
             층 사전의 `exclude`(동음이의·무관 검색 패턴)에 걸린 반환과, 반환 대부분이 제외된 시드
@@ -119,6 +129,39 @@ def load_seeds(path):
 
 
 # ── seeds ──────────────────────────────────────────────────────────────
+def cmd_universe(a):
+    L = Layers(a.layers)
+    have = {L.canon(d["keyword"]) for d in load_data(a.seed_metrics) if isinstance(d, dict) and d.get("keyword")}
+    seen, req, n_ret = set(have), [], 0
+    for p in a.expansion:
+        path = p.rpartition("@")[0] or p
+        for kw in load_data(path):
+            k = kw if isinstance(kw, str) else (kw or {}).get("keyword")
+            if not k:
+                continue
+            n_ret += 1
+            c = L.canon(k)
+            if c not in seen:
+                seen.add(c); req.append(k)
+    json.dump(req, open(a.out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    print(f"확장 반환 {n_ret}행 · 시드 응답과 canonical이 같은 {n_ret - len(req)}행 제외(이미 볼륨 있음 · 반환 간 중복 포함) "
+          f"→ 유니버스 요청 N = {len(req)}개")
+    print(f"유니버스 크레딧 = 1 × {len(req)} = {len(req)}  (keyword_info · data_type=ads_metrics → stage1_universe.json)")
+    print(f"→ {a.out}")
+
+
+def cmd_merge(a):
+    out, seen, per = [], set(), []
+    for path in a.files:
+        n = 0
+        for d in load_data(path):
+            if isinstance(d, dict) and d.get("keyword") and d["keyword"] not in seen:
+                seen.add(d["keyword"]); out.append(d); n += 1
+        per.append(f"{pathlib.Path(path).name} {n}행")
+    json.dump({"data": out}, open(a.out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    print(f"1단 지표 병합: {' + '.join(per)} = {len(out)}행 (같은 키워드는 먼저 준 파일 행) → {a.out}")
+
+
 def cmd_seeds(a):
     L = Layers(a.layers)
     rows = [d for d in load_data(a.metrics) if isinstance(d, dict)]
@@ -276,6 +319,14 @@ def main():
     s.add_argument("--metrics", required=True, help="1단 ads_metrics 응답")
     s.add_argument("--layers", help="층 사전 — 변형치환·층 배정")
     s.add_argument("-o", "--out", default="seed_check.json")
+    u = sp.add_parser("universe", help="확장 반환 → 유니버스 볼륨 요청 목록 (시드 응답에 있는 것은 뺀다)")
+    u.add_argument("--seed-metrics", required=True, help="1단 시드 ads_metrics 응답 (stage1_seeds.json)")
+    u.add_argument("--layers", help="층 사전 — 변형치환(canonical 대조)")
+    u.add_argument("--expansion", action="append", default=[], help="intent_finder 응답(@limit 허용)")
+    u.add_argument("-o", "--out", default="universe_request.json")
+    m = sp.add_parser("merge", help="1단 시드 응답 + 유니버스 응답 → metrics_stage1.json")
+    m.add_argument("files", nargs="+", help="keyword_info(ads_metrics) 응답 JSON — 앞 파일 우선")
+    m.add_argument("-o", "--out", default="metrics_stage1.json")
     r = sp.add_parser("review", help="확장 반환 검토 시트 (동음이의·무관 검색)")
     r.add_argument("--layers", required=True)
     r.add_argument("--expansion", action="append", default=[], help="intent_finder 응답(@limit 허용)")
@@ -292,7 +343,8 @@ def main():
     t.add_argument("--unclassified-warn", type=float, default=0.2, help="(미분류) 볼륨 비중 경고 임계")
     t.add_argument("-o", "--out", default="stage2_keywords.json")
     a = ap.parse_args()
-    {"seeds": cmd_seeds, "review": cmd_review, "stage2": cmd_stage2}[a.cmd](a)
+    {"seeds": cmd_seeds, "universe": cmd_universe, "merge": cmd_merge, "review": cmd_review,
+     "stage2": cmd_stage2}[a.cmd](a)
 
 
 if __name__ == "__main__":

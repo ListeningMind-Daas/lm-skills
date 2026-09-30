@@ -95,7 +95,7 @@ MAIN_COLS = ["country", "concept_id", "concept_label", "groups_used", "multi_var
              "volume_12m_lo", "volume_12m_hi", "anchor_volume_12m_lo", "anchor_volume_12m_hi",
              "index_vs_anchor_lo", "index_vs_anchor_hi", "index_reading",
              "index_rank_lo", "index_rank_hi", "index_rank_flip",
-             "yoy_3m", "yoy_basis", "yoy_status", "yoy_label", "bucket_warning",
+             "yoy_3m", "yoy_basis", "yoy_status", "yoy_label", "bucket_warning", "variant_yoy_split",
              "window_share_12m", "offseason_flag",
              "prev_year_window_volume", "missing_in_window", "missing_in_12m", "peak_month", "peak_share",
              "base_country", "season_corr_vs_base", "cpc_index", "competition_index_avg",
@@ -270,6 +270,38 @@ def main():
         doc = (HERE.parent / "SKILL.md").read_text(encoding="utf-8")
         if "약 2개월" in doc or "약 2개월" in (HERE.parent / "evals" / "evals.json").read_text(encoding="utf-8"):
             fails.append(("SKILL.md", "고정 지연 서술(약 2개월)이 남아 있다", ""))
+
+        # ── 2026-09-30 선크림 실측 회귀 (v1.3) ──
+        # 기준어 표기변형 2개(치환으로 같은 canonical): 마스터 첫 표기(日やけ止め)는 응답에 없고 둘째(日焼け止め)만 있다
+        v13 = {"category": "t", "rules": {"jp": {"변형치환": {"日やけ止め": "日焼け止め"}}},
+               "anchor": {"jp": ["日やけ止め", "日焼け止め"]},
+               "concepts": [{"id": "stick", "label": "스틱", "terms": {"jp": [{"kw": "日焼け止めスティック", "match": "x"}]}}]}
+        (tmp / "c13.json").write_text(json.dumps(v13, ensure_ascii=False), encoding="utf-8")
+        up = row("日焼け止め", 20000, "2026-07", split=False, growth=0.2)
+        dn = row("日やけ止め", 15000, "2026-07", split=False, growth=-0.2)
+        st = row("日焼け止め スティック", 5000, "2026-07", split=False)
+        (tmp / "s13.json").write_text(json.dumps({"data": [{"keyword": r["keyword"], "ads_metrics": r["ads_metrics"]}
+                                                            for r in (up, st)]}, ensure_ascii=False), encoding="utf-8")
+        rc, out = run([f"{S}/cross_country.py", "select", "--concepts", "c13.json", "--screen", "jp=s13.json",
+                       "-o", "st13"], tmp)
+        j2 = json.load(open(tmp / "st13" / "stage2_jp.json", encoding="utf-8")) if not rc else []
+        if "日焼け止め" not in j2 or "日やけ止め" in j2:
+            fails.append(("select", f"1단 응답에 없는 표기변형을 2단 요청어로 골랐다 (v1.3): {j2}", out[-300:]))
+        if "N = 3개" not in out or "canonical 2개" not in out:
+            fails.append(("select", "1단 N을 canonical 수로 셌다 — 요청 원문 수가 과금 단위 (v1.3)", out[-300:]))
+        rep13 = read(tmp / "st13" / "screen_report.csv") if not rc else []
+        if not any(r["keyword"] == "日やけ止め" and r["reason"].startswith("요청 표기 미반환") for r in rep13) \
+                or "요청한 표기가 응답에 없다" not in out:
+            fails.append(("select", "요청한 표기변형이 응답에 없는데 공백으로 보고하지 않음 (v1.3)", out[-300:]))
+        # 표기변형끼리 전년 대비 부호가 갈리면 경고
+        (tmp / "a13.json").write_text(json.dumps({"data": [up, dn, st]}, ensure_ascii=False), encoding="utf-8")
+        rc, out = run([f"{S}/cross_country.py", "compare", "--concepts", "c13.json", "--metrics", "jp=a13.json",
+                       "--queried-at", "2026-09-28", "-o", "cc13.csv"], tmp)
+        g13 = {r["concept_id"]: r for r in read(tmp / "cc13.csv")} if not rc else {}
+        an = g13.get("__anchor__", {})
+        if "日やけ止め" not in an.get("variant_yoy_split", "") or "추세 부호 갈림" not in an.get("bucket_warning", "") \
+                or "부호가 갈린다" not in out or an.get("yoy_label") != "[추정]":
+            fails.append(("compare", "표기변형 간 yoy 부호 갈림을 경고하지 않음 (v1.3)", str(an)[-300:]))
 
         # STEP 5 예시
         rc, out = run([f"{S}/trend_yoy.py", "all_us.json", "-o", "trend_us.csv"], tmp)

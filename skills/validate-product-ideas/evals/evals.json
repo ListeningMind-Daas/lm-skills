@@ -21,6 +21,13 @@
    "prompt": "러닝 크루끼리 페이스 맞춰주는 '페이스 메이트 밴드'라는 웨어러블 아이디어가 있어. 한국에서 이 이름으로 검색이 있나 보고 수요 판단해줘.",
    "expected_output": "신조어 제품명은 1단 존재 확인에서 죽은 시드로 나오는 것이 정상 — «시장 없음»이 아니라 «검색 신호 없음 [데이터 공백]»으로 쓰고, 문제·목표 층 프록시(러닝 페이스 조절, 러닝 크루 등)로 재시도한다. 죽은 시드는 intent_finder에 넣지 않는다(1단에서는 과금됨). 죽은 시드 목록과 «검색 신호 없음 [데이터 공백]» 문장이 카드에 스크립트로 실린다. 프록시(«페이스메이트»·«러닝 밴드»)의 확장 반환을 2단 전에 검토해 동음이의(커피 제품명·헤어밴드)를 exclude로 빼고, 검토되지 않은 프록시가 층을 좌우하면 그 층을 인용하지 않는다. 대조군 성격: 스킬 없이도 «검색량 없음»은 나오지만, 공백을 부정 근거로 단정하지 않는지를 본다.",
    "files": []
+  },
+  {
+   "id": 3,
+   "name": "mineral-toneup-sunstick-order",
+   "prompt": "«무기자차 톤업 선스틱» 수요 있을까? 민감 피부용으로 생각 중이야.",
+   "expected_output": "① 확장 직후 prepare_stages.py universe → keyword_info(ads_metrics) → prepare_stages.py merge로 metrics_stage1.json을 만든 뒤 coverage_curve·review를 돌린다 ② intent_finder 호출에 sort=volume_avg · order=desc를 명시 ③ «~없는» 부정형 표현을 해결책 층에 두거나 문제 층 패턴에서 막고 [가정]으로 적는다 ④ 판정 대신 층별 신호 카드 (배경: 2026-09-30 실측: STEP 3 coverage_curve·STEP 3.5 review가 metrics_stage1.json을 요구하는데 그 파일은 STEP 5에서야 생겨 손으로 병합했다. «백탁 없는»·«눈시림 없는» 같은 부정형 표현이 문제 층으로 잡힐 수 있다.)",
+   "files": []
   }
  ]
 }

@@ -16,7 +16,8 @@
                  검색어의 **단어(공백 단위 토큰) 전체가 일치**할 때만 — `려`가 `가려움`에 걸리지 않게.
   층(layer)      브랜드가 걸리면 L5, 아니면 사전 themes 배열에서 먼저 선언된 층. 걸린 층 전부는 layer_facets.
                  layer_facets_beyond_seed는 **시드에 들어 있는 사전 표현을 뺀** 층 — 시드 토큰
-                 (`탈모`)이 모든 반환에 들어가 층 포함률이 자명해지는 것을 막는다.
+                 (`탈모`)이 모든 반환에 들어가 층 포함률이 자명해지는 것을 막는다. L5 브랜드도 포함한다
+                 (브랜드가 시드에 들어 있을 때만 뺀다 — 예전에는 늘 빠져 «시드 표현 제외» L5가 0.0%였다).
   단계(stage)    사전 stages 배열을 순서대로 평가해 먼저 걸린 것. 전부는 stage_facets.
 
 집계(계약 T5):
@@ -161,6 +162,10 @@ def annotate(rows, d, seeds, metrics=None):
             blocked[blk].append(r["keyword"])
         facets = d.layers(c)
         beyond = d.layers_beyond(c, seed_terms)
+        if r["brand"] and not any(d.canon(r["brand"]) in sc for sc in seed_c):
+            beyond = [LAYER_BRAND] + beyond
+        hits = [n for n, p in d.stages if p.search(c)]
+        r["stage"] = hits[0] if hits else UNCLASSIFIED
         r["layer"] = LAYER_BRAND if r["brand"] else (facets[0] if facets else UNCLASSIFIED)
         r["layer_facets"] = "|".join(([LAYER_BRAND] if r["brand"] else []) + facets)
         r["layer_facets_beyond_seed"] = "|".join(beyond)
@@ -259,14 +264,14 @@ def cmd_pick(a):
     chosen = {r["keyword"]: r for r in reps[: a.top]}
     top_hi = sorted(reps, key=lambda r: -hi[r["canonical"]])[: a.top]
     only_hi = [r["keyword"] for r in top_hi if r["keyword"] not in chosen]
-    # 층별 표본은 **시드 밖 층(facet)** 기준 — 주 층은 시드 토큰(L3)에 끌려가 L1·L2가 비기 쉽다
+    # 층별 표본은 **시드 밖 층(facet)** 기준 — 주 층은 시드 토큰(L3)에 끌려가 L1·L2가 비기 쉽다.
+    # 브랜드 행도 그 안의 L1·L2 표현으로 해당 층 표본에 들어간다(예전에는 L5에만 넣어 «헤라 수분 선크림»의
+    # 수분이 L1 표본에서 빠졌다). 층 안에서는 브랜드 여부와 무관하게 볼륨 순이다
     by_layer = defaultdict(list)
     for r in reps:
         if r["is_seed"]:
             continue
         strata = [f for f in r["layer_facets_beyond_seed"].split("|") if f] or [r["layer"]]
-        if r["brand"]:
-            strata = [LAYER_BRAND]
         for s in strata:
             by_layer[s].append(r)
     added = defaultdict(int)
@@ -277,11 +282,34 @@ def cmd_pick(a):
             if r["keyword"] not in chosen:
                 chosen[r["keyword"]] = r
                 added[layer] += 1
+    # 단계-API 대조 표본 보장 — 탐색·비교·구매로 분류된 그룹이 --min-stage-groups개 이상 들어가도록 단계를
+    # 돌아가며 볼륨 순으로 더한다(2026-09-30 선크림: 기본 선택 75개 중 대조 가능 11그룹 — 일치율 결론 불가)
+    stage_names = [n for n, _ in d.stages if n in STAGE_TO_API]
+    stage_pool = {n: [r for r in reps if r["stage"] == n] for n in stage_names}
+    def n_staged():
+        return sum(1 for r in chosen.values() if r["stage"] in STAGE_TO_API)
+    before_stage, added_stage = n_staged(), defaultdict(int)
+    while n_staged() < a.min_stage_groups:
+        moved = False
+        for n in stage_names:
+            nxt = next((r for r in stage_pool[n] if r["keyword"] not in chosen), None)
+            if nxt and n_staged() < a.min_stage_groups:
+                chosen[nxt["keyword"]] = nxt; added_stage[n] += 1; moved = True
+        if not moved:
+            break
     out = [r["keyword"] for r in sorted(chosen.values(), key=lambda r: -r["_vol"])]
     json.dump(out, open(a.out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print(f"canonical {len(reps)}그룹 중 2단 대상 {len(out)}개 "
-          f"(상위 {a.top} + 시드 밖 층마다 상위 목록 밖 {a.per_layer}개) → {a.out}")
+          f"(상위 {a.top} + 시드 밖 층마다 상위 목록 밖 {a.per_layer}개"
+          + (f" + 단계 대조 보강 {sum(added_stage.values())}개" if added_stage else "") + f") → {a.out}")
     print("층별 추가: " + (" · ".join(f"{k} +{v}" for k, v in sorted(added.items())) or "없음"))
+    staged = n_staged()
+    print(f"단계 분류 그룹(탐색·비교·구매) {staged}개 — 단계-API 대조 후보 (보강 전 {before_stage}개"
+          + (" · 보강 " + " · ".join(f"{k} +{v}" for k, v in added_stage.items()) if added_stage else "") + ")")
+    if staged < max(a.min_stage_groups, AGREE_MIN_N):
+        print(f"⚠️ 단계 분류 그룹이 {staged}개 < {max(a.min_stage_groups, AGREE_MIN_N)} — 사전 stages 패턴이 적게 걸린다. "
+              "일치율을 결론에 쓰지 못할 수 있다(STEP 6). stages를 보강하거나 --min-stage-groups를 올릴 것")
+    print("  (n 플래그만 켜진 그룹은 report 대조에서 빠지므로 실제 대조 수는 이보다 작을 수 있다)")
     print(f"2단 크레딧 = 10 × {len(out)} = {10 * len(out):,}")
     if only_hi:
         print(f"⚠️ 순위 뒤집힘: 상한(표기변형 합) 기준이면 상위 {a.top}에 드는 그룹 {len(only_hi)}개 "
@@ -529,6 +557,9 @@ def main():
     common(p)
     p.add_argument("--top", type=int, default=50)
     p.add_argument("--per-layer", type=int, default=5)
+    p.add_argument("--min-stage-groups", type=int, default=AGREE_MIN_N,
+                   help=f"단계(탐색·비교·구매)로 분류된 그룹이 이 수 이상 들어가도록 보강 — 단계-API 대조 표본 "
+                        f"(기본 {AGREE_MIN_N} = 일치율 결론 최소 표본 · 0이면 보강 안 함)")
     p.add_argument("-o", "--out", default="gated.json")
     r = sub.add_parser("report", help="분류·집계·교차확인")
     common(r)
