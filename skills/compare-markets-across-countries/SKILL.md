@@ -18,7 +18,7 @@ description: |
   예측하지 않는다** — 그런 요청에는 현재 격차와 시즌 차이까지만 답하고 예측은 하지 않는다고 말한다.
 license: MIT
 metadata:
-  version: "1.3.0"
+  version: "1.3.1"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info; flags=monthly; traps=T1,T2,T3,T4,T5,T6 -->

@@ -20,7 +20,7 @@ description: |
   주면 그것을 쓰고 `trend_finder`는 근거로만 붙인다. 카테고리 전체 유니버스가 필요하면 `map-your-market`.
 license: MIT
 metadata:
-  version: "1.6.0"
+  version: "1.6.1"
 ---
 
 <!-- lm-skill: kind=task; connectors=trend_finder,keyword_info; flags=monthly; traps=T1,T2,T3,T4,T5,T6 -->

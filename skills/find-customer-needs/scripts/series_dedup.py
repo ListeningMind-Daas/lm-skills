@@ -14,8 +14,13 @@ keyword_info는 요청하지 않은 변형(띄어쓰기·어순·복수형·동�
   2. 시계열이 다른 표기변형(같은 canonical) → 하한(그룹 최댓값)·상한(그룹 합)을 병기한다.
   [추정] 이 판정은 규칙 기반이다. 근거 범위는 계약 T5에 적는다.
 
+  0. 같은 keyword의 행이 두 번 오면(응답 안에서 행 자체가 반복 — 2026-09-30 한국 742요청에 767행,
+     초과 25행이 전부 완전 중복) 완전히 같은 행은 하나로 합친다(`collapse_identical`). dedup_map은
+     키워드를 키로 쓰므로 합치지 않으면 두 행이 모두 대표가 되어 그룹 상한에 이중으로 들어간다.
+
 모듈 사용:
-  from series_dedup import canon, dedup_map
+  from series_dedup import canon, collapse_identical, dedup_map
+  rows, merged, conflicts = collapse_identical(rows)   # 먼저 완전 중복 행을 합친다
   dmap = dedup_map(rows)          # rows: keyword_info 응답의 data 항목들
   dmap[kw] -> {"rep": 대표 키워드, "basis": "시계열 일치" | "지표 일치" | "", "n": 묶음 크기}
 
@@ -60,6 +65,36 @@ def load_rules(value):
     if isinstance(obj, dict) and all(isinstance(v, str) for v in obj.values()):
         return obj
     return {}
+
+
+def collapse_identical(rows):
+    """같은 keyword의 **완전히 같은 행**을 하나로 합친다 → (rows, 합친 행 수, 충돌 키워드 목록).
+
+    keyword는 같은데 내용이 다른 행은 합치지 않고 첫 행만 남긴 뒤 충돌 목록으로 돌려준다 —
+    어느 쪽이 맞는지 응답만으로는 알 수 없으므로 호출 측이 출력해 사람이 확인하게 한다.
+    """
+    first, out, merged, conflicts = {}, [], 0, []
+    for r in rows:
+        kw = r.get("keyword") if isinstance(r, dict) else None
+        if not isinstance(kw, str):
+            out.append(r); continue
+        sig = json.dumps(r, sort_keys=True, ensure_ascii=False)
+        if kw not in first:
+            first[kw] = sig; out.append(r)
+        elif first[kw] == sig:
+            merged += 1
+        else:
+            conflicts.append(kw)
+    return out, merged, conflicts
+
+
+def report_collapse(merged, conflicts, total):
+    """collapse_identical 결과를 한 줄로 알린다 (합친 것이 없으면 조용히)."""
+    if merged:
+        print(f"완전 중복 행 {merged}행 합침 — 응답 {total}행 안에서 같은 keyword·같은 내용이 반복됨 (계약 T5)")
+    if conflicts:
+        print(f"⚠️ keyword는 같은데 내용이 다른 행 {len(conflicts)}건 — 첫 행만 사용: {', '.join(conflicts[:5])}"
+              + (" …" if len(conflicts) > 5 else ""))
 
 
 def _tokens(kw):
@@ -133,6 +168,9 @@ def main():
     a = ap.parse_args()
     obj = json.load(open(a.metrics, encoding="utf-8"))
     rows = obj.get("data", obj) if isinstance(obj, dict) else obj
+    n_raw = len(rows)
+    rows, merged, conflicts = collapse_identical(rows)
+    report_collapse(merged, conflicts, n_raw)
     dm = dedup_map(rows, load_rules(a.rules))
     dup = {k: v for k, v in dm.items() if v["rep"] != k}
     vol = {r["keyword"]: (r.get("ads_metrics") or {}).get("volume_total") or 0 for r in rows if isinstance(r, dict)}

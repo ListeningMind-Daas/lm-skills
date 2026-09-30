@@ -51,6 +51,13 @@ def fixture(tmp: pathlib.Path):
     (tmp / "r1.json").write_text(json.dumps({"data": ["썬크림", "브랜드에이 선스틱"]},
                                             ensure_ascii=False), encoding="utf-8")
     (tmp / "rules.json").write_text('{"썬":"선"}', encoding="utf-8")
+    # 응답 안에서 같은 keyword·같은 내용의 행이 반복된 경우(2026-09-30 실측 모양)
+    (tmp / "metrics_dup.json").write_text(json.dumps({"data": data + [data[2]]}, ensure_ascii=False), encoding="utf-8")
+    # 시드별 intent_finder 응답 — request_detail로 확장 단계를 추정할 수 있는 모양
+    (tmp / "if_a.json").write_text(json.dumps({"request_detail": {"keywords": ["선크림"]},
+                                               "data": ["선크림", "썬크림"]}, ensure_ascii=False), encoding="utf-8")
+    (tmp / "if_b.json").write_text(json.dumps({"request_detail": {"keywords": ["선크림"]},
+                                               "data": ["선크림", "브랜드에이 선스틱"]}, ensure_ascii=False), encoding="utf-8")
     (tmp / "themes.json").write_text(json.dumps({
         "rules": {"변형치환": {"썬": "선"}},
         "themes": [{"name": "제형", "pattern": "선스틱|스틱"}],
@@ -91,6 +98,8 @@ def main():
 
         if has("trend_yoy.py"):
             rc, out = run([f"{S}/trend_yoy.py", "metrics.json", "-o", "trend.csv"], tmp)
+            if not rc and not all(k in out for k in ("계산 불가", "같은 검색의 중복", "게이트 미만")):
+                fails.append(("trend_yoy", "랭킹 풀 제외 사유가 사유별로 나뉘어 출력되지 않는다", out[-300:]))
             need = {"yoy", "yoy_ex_last_month", "mom_last", "mom_last_prev_year",
                     "last_month_gap_vs_prev_year", "last_month_flag", "missing_months_in_window"}
             if rc:
@@ -113,6 +122,12 @@ def main():
                 miss = {"canonical", "brand", "theme_primary"} - header(tmp / "universe.csv")
                 if miss:
                     fails.append(("build_universe", f"명세 컬럼 누락: {sorted(miss)}", ""))
+            rc2, out2 = run([f"{S}/build_universe.py", "--metrics", "metrics_dup.json", "--themes", "themes.json",
+                             "-o", "universe_dup.csv"], tmp)
+            if rc2 or "완전 중복 행 1행 합침" not in out2:
+                fails.append(("build_universe", "같은 keyword의 완전 중복 행을 합치지 않는다(상한 이중 계상)", out2[-300:]))
+            elif not rc and out.split("상한 ")[1].split()[0] != out2.split("상한 ")[1].split()[0]:
+                fails.append(("build_universe", "완전 중복 행이 있으면 그룹 상한이 달라진다", out2[-300:]))
 
         if has("coverage_curve.py"):
             # SKILL.md 예시 그대로 — 인라인 JSON
@@ -137,6 +152,22 @@ def main():
                            "--round", "R1=r1.json@2", "--round", "R2=seeds.json"], tmp)
             if rc or "보류" not in out:
                 fails.append(("coverage_curve", "앞 라운드의 절단이 뒤 라운드에 가려 «보류»가 안 나온다(순서 의존)", out[-300:]))
+            rc, out = run([f"{S}/coverage_curve.py", "--metrics", "metrics.json", "--themes", "themes.json",
+                           "--rules", '{"썬":"선"}', "--round", "S1=seeds.json", "--round", "R1=r1.json@2"], tmp)
+            if "함께 수렴" in out:
+                fails.append(("coverage_curve", "전체 판정이 «보류»인데 논브랜드를 «수렴»으로 적는다(문구 모순)", out[-300:]))
+            verdicts = []
+            for order in (("if_a.json", "if_b.json"), ("if_b.json", "if_a.json")):
+                rc, out = run([f"{S}/coverage_curve.py", "--metrics", "metrics.json", "--rules", '{"썬":"선"}',
+                               "--round", "S1=seeds.json",
+                               "--round", f"R1-x={order[0]}", "--round", f"R1-y={order[1]}"], tmp)
+                verdicts.append(next((l for l in out.splitlines() if l.startswith("판정:")), out[-200:]))
+            if rc or verdicts[0] != verdicts[1] or "묶음" not in out:
+                fails.append(("coverage_curve", "같은 라운드(R1-…) 호출을 묶지 않아 판정이 호출 순서에 달린다", " / ".join(verdicts)))
+            rc, out = run([f"{S}/coverage_curve.py", "--metrics", "metrics.json", "--rules", '{"썬":"선"}',
+                           "--round", "S1=seeds.json", "--round", "A=if_a.json", "--round", "B=if_b.json"], tmp)
+            if rc or "같은 확장 단계" not in out:
+                fails.append(("coverage_curve", "같은 확장 단계가 라운드 둘로 갈렸는데 «보류»로 알리지 않는다", out[-300:]))
 
         if has("trend_signals.py"):
             rc, out = run([f"{S}/trend_signals.py", "metrics.json", "-o", "sig.csv",
@@ -162,6 +193,13 @@ def main():
             dm = dedup_map(rows)
             if dm["stick vacuum cordless"]["rep"] != dm["cordless stick vacuum"]["rep"]:
                 fails.append(("series_dedup", "시계열이 같은 어순 변형을 중복으로 묶지 못한다", ""))
+            try:
+                from series_dedup import collapse_identical
+                rows2, merged, conflicts = collapse_identical(rows + [dict(rows[2])])
+            except ImportError:
+                rows2, merged, conflicts = rows, 0, []
+            if merged != 1 or len(rows2) != 3 or conflicts:
+                fails.append(("series_dedup", "같은 keyword의 완전 중복 행을 하나로 합치지 못한다", ""))
             if dm["robot mop"]["rep"] != "robot mop":
                 fails.append(("series_dedup", "시계열이 다른 키워드를 중복으로 묶었다", ""))
             if apply_rules("vacuum sale", {"vacuums": "vacuum"}) != "vacuum sale":

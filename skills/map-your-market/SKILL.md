@@ -20,7 +20,7 @@ description: |
   이 스킬은 **유니버스의 넓이와 그 경계**를 답하지, 구조나 순서를 답하지 않는다.
 license: MIT
 metadata:
-  version: "1.2"
+  version: "1.2.1"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info,intent_finder; flags=monthly,expand,share; traps=T1,T2,T3,T4,T5,T6,T7,T8 -->
@@ -204,6 +204,7 @@ python3 scripts/coverage_curve.py --metrics universe_metrics.json \
     --round "R1·확장1=intent_r1.json@300" \
     --round "R2·확장2=intent_r2.json@600"
 # 시드별 호출이 여러 건인 라운드: --round "R1·확장1=r1_seedA.json@300,r1_seedB.json@300"
+#   또는 첫 '-' 앞이 같은 라벨로 나눠 넘긴다(한 판정 라운드로 묶인다): --round "R1-A=r1_seedA.json@300" --round "R1-B=r1_seedB.json@300"
 # --rules 는 인라인 JSON · 치환 사전 파일 · themes.json(rules.변형치환) 모두 받는다 → --rules themes.json
 ```
 

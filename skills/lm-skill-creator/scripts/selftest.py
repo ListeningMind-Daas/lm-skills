@@ -50,22 +50,39 @@ def main():
             elif "미작성" not in o:
                 fails.append(("audit_skill", "미작성 항목을 P0로 잡지 못했다", o[-300:]))
 
-        # 3. 공유 자산이 없으면 «조용히 빈 스킬»이 아니라 즉시 실패해야 한다
-        import os, shutil as sh
-        stash = out / "_stash"
-        sh.copytree(KIT / "shared" / "scripts", stash)
-        try:
-            for f in (KIT / "shared" / "scripts").glob("*.py"):
-                os.remove(f)
-            rc, o = run([HERE/"new_skill.py", "broken", "--job", "x", "--connectors",
-                         "keyword_info", "--monthly", "--out", out])
-            if rc == 0:
-                fails.append(("new_skill", "공유 자산이 없는데 생성에 성공했다 — 빈 스크립트 스킬이 나간다", o[-300:]))
-            elif (out / "broken").exists():
-                fails.append(("new_skill", "실패했는데 반쪽 폴더가 남았다", ""))
-        finally:
-            for f in stash.glob("*.py"):
-                sh.copyfile(f, KIT / "shared" / "scripts" / f.name)
+        # 3. 공유 자산이 없으면 «조용히 빈 스킬»이 아니라 즉시 실패해야 한다.
+        #    저장소 정본을 지우지 않는다 — 임시 사본에서 스크립트를 빼고 --shared 로 가리킨다.
+        import shutil as sh
+        fake = out / "_shared"
+        sh.copytree(KIT / "shared", fake, ignore=sh.ignore_patterns("__pycache__"))
+        for f in (fake / "scripts").glob("*.py"):
+            f.unlink()
+        rc, o = run([HERE/"new_skill.py", "broken", "--job", "x", "--connectors",
+                     "keyword_info", "--monthly", "--out", out, "--shared", fake])
+        if rc == 0:
+            fails.append(("new_skill", "공유 자산이 없는데 생성에 성공했다 — 빈 스크립트 스킬이 나간다", o[-300:]))
+        elif (out / "broken").exists():
+            fails.append(("new_skill", "실패했는데 반쪽 폴더가 남았다", ""))
+
+        # 3-1. 감사기 — 표 칸 안 ⬜ 와 빈 4-Label 을 막는가 (2026-09-30: 줄 맨 앞 ⬜ 만 세서 19개 중 3개만 잡았다)
+        if skill.is_dir():
+            rc, o = run([HERE/"audit_skill.py", skill, "--json"])
+            try:
+                rep = json.loads(o[o.index("{"):])
+                p0 = {f["title"] for f in rep["P0"]}
+                titles = p0 | {f["title"] for f in rep["P1"]}
+            except (ValueError, KeyError):
+                p0 = titles = set()
+            want = "미작성 항목 19건"
+            if want not in p0:
+                fails.append(("audit_skill", f"골격 ⬜ 를 전부 세지 못했다 ({want} 기대)", str(sorted(p0))[:300]))
+            if "4-Label 규율 없음" not in p0:
+                fails.append(("audit_skill", "칸이 빈 4-Label 표가 통과했다", str(sorted(p0))[:300]))
+            # 함정 단어는 공유 문서 사본(themes-schema.md)과 골격 안내문에 이미 있다 — 그것으로 충족되면 안 된다
+            leaked = [t for t in ("T1", "T4", "T5", "T8")
+                      if not any(x.startswith(f"함정 미처리 — {t}") for x in titles)]
+            if leaked:
+                fails.append(("audit_skill", f"빈 골격에서 함정 {','.join(leaked)} 가 충족됐다 — 사본·안내문 단어를 세고 있다", ""))
 
         # 4. 감사기 — meta 면제가 동작하는가
         rc, o = run([HERE/"audit_skill.py", HERE.parent, "--kind", "meta"])
@@ -85,7 +102,7 @@ def main():
             print(f"  ✗ {n}: {why}")
             if d: print(f"      {d.strip()[:200]}")
         return 1
-    print("통과 — 골격 생성 · 의무 선언 · 공유 자산 부재 시 중단 · 감사기(막음/면제) · 사본 동기")
+    print("통과 — 골격 생성 · 의무 선언 · 공유 자산 부재 시 중단(정본 무손상) · 감사기(막음/칸 안 ⬜/빈 4-Label/사본 단어/면제) · 사본 동기")
     return 0
 
 

@@ -13,12 +13,12 @@
   --expand   반복 확장을 한다    → T7 + coverage_curve
   --share    점유·기회를 논한다  → T8
 """
-import argparse, json, pathlib, shutil, sys
+import argparse, json, os, pathlib, shutil, sys
 
 KIT = pathlib.Path(__file__).resolve().parents[3]          # 저장소 루트
-CONTRACT = KIT / "shared" / "lm-data-contract.md"
-SHARED_SCRIPTS = KIT / "shared" / "scripts"                 # 재사용 스크립트 정본
-SHARED_ASSETS = KIT / "shared" / "assets"
+# 정본 위치는 --shared 로 바꿀 수 있다 — selftest 가 저장소 정본을 지우지 않고 «공유 자산 없음»을
+# 시험하려고 쓴다(이전 판 selftest 는 저장소 shared/scripts 를 지웠다가 복원해, 중간에 끊기면 정본이 사라졌다).
+SHARED = KIT / "shared"
 # 이전 판은 특정 태스크 스킬(map-your-market)에서 스크립트를 복사했다. 그 폴더가 사라지면
 # 조용히 아무것도 복사하지 않고, 생성된 SKILL.md는 "배치돼 있다"고 말했다 — 그래서 정본을
 # shared로 올리고, 없으면 여기서 즉시 실패시킨다.
@@ -150,10 +150,15 @@ def main():
     ap.add_argument("--expand", action="store_true")
     ap.add_argument("--share", action="store_true")
     ap.add_argument("--out", default=str(KIT / "skills"))
+    ap.add_argument("--shared", default=str(SHARED), help=argparse.SUPPRESS)
     a = ap.parse_args()
+    shared = pathlib.Path(a.shared)
+    CONTRACT = shared / "lm-data-contract.md"
+    SHARED_SCRIPTS = shared / "scripts"                     # 재사용 스크립트 정본
+    SHARED_ASSETS = shared / "assets"
     if not CONTRACT.is_file():
         sys.exit("lm-skill-creator는 저장소 전체(클론)에서 실행한다 — 루트의 shared/ 정본을 찾지 못했다.\n"
-                 f"  기대 위치: {CONTRACT.parent}")
+                 f"  기대 위치: {os.path.relpath(CONTRACT.parent)}")
 
     dest = pathlib.Path(a.out).resolve() / a.name
     if dest.exists():
@@ -173,7 +178,7 @@ def main():
     if missing or not CONTRACT.is_file():
         shutil.rmtree(dest, ignore_errors=True)
         sys.exit("공유 자산이 없다 — 생성을 중단한다(빈 스크립트로 스킬이 나가는 것을 막는다).\n"
-                 f"  기대 위치: {SHARED_SCRIPTS}\n"
+                 f"  기대 위치: {os.path.relpath(SHARED_SCRIPTS)}\n"
                  f"  없는 것: {', '.join(missing) or 'lm-data-contract.md'}")
     copied = []
     for script in need:
@@ -184,7 +189,7 @@ def main():
     if tmpl.is_file() and ("expand" in flags or "share" in flags):
         shutil.copyfile(tmpl, dest / "assets" / "themes.template.json")
         copied.append("themes.template.json")
-        schema = KIT / "shared" / "references" / "themes-schema.md"
+        schema = shared / "references" / "themes-schema.md"
         if schema.is_file():
             shutil.copyfile(schema, dest / "references" / "themes-schema.md")
             copied.append("themes-schema.md")
@@ -194,12 +199,14 @@ def main():
                   {"id": 1, "prompt": "⬜ 입력이 불완전한 발화로 쓸 것", "expected_output": "⬜", "files": []}],
     }, ensure_ascii=False, indent=1), encoding="utf-8")
 
-    print(f"생성: {dest}")
+    # 출력은 로그·문서로 옮겨 적히므로 로컬 절대경로 대신 현재 폴더 기준 경로를 쓴다
+    rel = lambda p: os.path.relpath(p)
+    print(f"생성: {rel(dest)}")
     print(f"  계약 사본 · 재사용 스크립트 {len(copied)}종 ({', '.join(copied)})")
     print(f"  함정 의무 {len(traps)}건이 SKILL.md에 미작성(⬜)으로 박혀 있다")
     print("\n다음: SKILL.md의 ⬜를 채우고 →")
     print(f"  python3 scripts/selftest.py")
-    print(f"  python3 {pathlib.Path(__file__).parent}/audit_skill.py {dest} --contract {CONTRACT}")
+    print(f"  python3 {rel(pathlib.Path(__file__).parent / 'audit_skill.py')} {rel(dest)} --contract {rel(CONTRACT)}")
 
 
 if __name__ == "__main__":

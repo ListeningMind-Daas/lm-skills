@@ -11,12 +11,17 @@ intent_finder는 키워드 문자열만 준다. 지표를 붙이지 않으면 CS
   python3 build_universe.py --metrics <ads_info.json> --themes <themes.json> \
       --round "S1·시드=seeds.json" --round "R1·확장1=intent_r1.json" \
       [--trend trend.csv] -o keyword_universe.csv
+
+--metrics는 keyword_info 응답 하나여야 한다. keyword_info는 1회 **1,000키워드**가 상한이라 유니버스가
+그보다 크면 나눠 호출하고 응답을 합쳐 넘긴다 — 합치는 법은 lm-data-contract.md «응답 병합»
+(data는 이어 붙이고 request_detail.keywords는 요청 순서대로 잇고 cost_detail은 부분별로 남긴 뒤 합한다).
+응답 안에서 같은 keyword·같은 내용의 행이 반복되면 하나로 합치고 몇 행 합쳤는지 출력한다.
 """
 import argparse, csv, json, pathlib, re, sys, unicodedata
 from collections import Counter
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from series_dedup import canon as _canon, dedup_map  # noqa: E402  같은 검색의 중복 판정 (계약 T5)
+from series_dedup import canon as _canon, collapse_identical, dedup_map, report_collapse  # noqa: E402  (계약 T5)
 
 
 def load(path):
@@ -59,6 +64,9 @@ def main():
             trend[r["keyword"]] = r
 
     metrics = load(a.metrics)
+    n_raw = len(metrics)
+    # 같은 keyword의 완전 중복 행 — 합치지 않으면 두 행이 모두 대표(dup_of 빈칸)가 되어 상한에 두 번 들어간다
+    metrics, n_merged, conflicts = collapse_identical(metrics)
     dmap = dedup_map(metrics, subs)
     rows = []
     for d in metrics:
@@ -105,6 +113,7 @@ def main():
         if not r["brand"]:
             lo_nb[c] = max(lo_nb.get(c, 0), v); hi_nb[c] = hi_nb.get(c, 0) + v
     t_lo, t_hi = sum(lo.values()), sum(hi.values())
+    report_collapse(n_merged, conflicts, n_raw)
     print(f"{len(rows)}행 → 같은 검색의 중복 {n_dup}행 제외(시계열·지표 일치 [추정]) → canonical {groups}그룹")
     print(f"그룹 기준 볼륨: 하한 {t_lo:,} ~ 상한 {t_hi:,}  "
           "※ 하한=그룹 내 최댓값(변형이 같은 검색의 중복일 때) · 상한=그룹 내 합(서로 다른 검색일 때) [추정]")

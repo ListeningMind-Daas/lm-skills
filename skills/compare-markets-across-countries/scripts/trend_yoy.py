@@ -11,11 +11,15 @@ monthly_volume으로 재현되지 않는다. 그래서 여기서는 창을 명�
 
 사용법:
   python3 trend_yoy.py <ads_info.json> -o trend.csv [--gate 3000] [--ref-month 2026-07]
+
+--ref-month는 비교 창의 **끝 달**이다(기본: 데이터의 최신 월). 다른 산출물과 창을 맞춰야 할 때 준다 —
+예: 분석 본문이 2026-07에서 끝나는데 응답 최신 월이 2026-08이면 `--ref-month 2026-07`로 주어야
+교차확인 값이 본문 창(2026-05~07 vs 2025-05~07)과 같아진다. 마지막 달을 빼고 볼 때도 쓴다.
 """
 import argparse, csv, json, pathlib, sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from series_dedup import dedup_map  # noqa: E402  같은 검색의 중복은 랭킹에 한 번만 (계약 T5)
+from series_dedup import collapse_identical, dedup_map, report_collapse  # noqa: E402  같은 검색의 중복은 랭킹에 한 번만 (계약 T5)
 
 
 def load(path):
@@ -49,13 +53,18 @@ def acc(series, months):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("path"); ap.add_argument("-o", "--out", default="trend.csv")
-    ap.add_argument("--ref-month", help="기본: 데이터의 최신 월")
+    ap.add_argument("--ref-month", metavar="YYYY-MM",
+                    help="비교 창의 끝 달 (기본: 데이터의 최신 월). 본문 분석 창에 맞출 때 준다 — "
+                         "예: 본문이 2026-07에서 끝나면 --ref-month 2026-07")
     ap.add_argument("--window", type=int, default=3, help="비교 창 개월 수 (기본 3)")
     ap.add_argument("--gate", type=int, default=3000,
                     help="랭킹 진입 최소 전년 볼륨 — 기저 0 폭발 차단 (기본 3000)")
     a = ap.parse_args()
 
-    data = [d for d in load(a.path) if d.get("monthly_volume")]
+    raw = load(a.path)
+    n_raw = len(raw)
+    raw, n_merged, conflicts = collapse_identical(raw)   # 같은 keyword의 완전 중복 행은 한 행으로
+    data = [d for d in raw if d.get("monthly_volume")]
     # 배열 순서를 가정하지 않는다 — 전 행의 달 중 최댓값이 기준월
     ref = a.ref_month or max(m["month"] for d in data for m in d["monthly_volume"] if isinstance(m, dict))
     W = a.window
@@ -100,8 +109,11 @@ def main():
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
 
     dups = {k for k, v in dedup_map(data).items() if v["rep"] != k}
-    pool = [r for r in rows if r["yoy"] != "" and r[f"sum_{W}m_prev_year"] >= a.gate and r["keyword"] not in dups]
-    skipped = len(rows) - len(pool)
+    # 제외 사유는 서로 배타적으로 한 번씩만 센다 — 계산 불가 → 같은 검색 중복 → 게이트 미만 순
+    no_calc = [r for r in rows if r["yoy"] == ""]
+    dup_rows = [r for r in rows if r["yoy"] != "" and r["keyword"] in dups]
+    below = [r for r in rows if r["yoy"] != "" and r["keyword"] not in dups and r[f"sum_{W}m_prev_year"] < a.gate]
+    pool = [r for r in rows if r["yoy"] != "" and r["keyword"] not in dups and r[f"sum_{W}m_prev_year"] >= a.gate]
     cmp_ = [r for r in rows if r["yoy"] != "" and r["api_volume_trend_do_not_use"] is not None]
     mism = [r for r in cmp_ if (r["yoy"] > 0) != (r["api_volume_trend_do_not_use"] > 0)]
 
@@ -109,7 +121,10 @@ def main():
     print(f"기준월 {ref} · 비교 창 {cur[0]}~{cur[-1]} vs {prev_y[0]}~{prev_y[-1]}")
     print(f"마지막 달 미완결 의심: {len(flagged)}행 ({len(flagged)/len(rows):.1%}) "
           f"— 판정은 yoy_ex_last_month와 교차확인할 것")
-    print(f"{len(rows)}행 → 랭킹 풀 {len(pool)}행 (게이트 {a.gate:,} 미만·계산 불가·같은 검색 중복 {skipped}행 제외)")
+    report_collapse(n_merged, conflicts, n_raw)
+    print(f"{len(rows)}행 → 랭킹 풀 {len(pool)}행 · 제외 {len(rows) - len(pool)}행")
+    print(f"  계산 불가 {len(no_calc)}행 (비교 창에 결측 월 또는 전년 합 0) · "
+          f"같은 검색의 중복 {len(dup_rows)}행 (대표 행만 랭킹) · 게이트 미만 {len(below)}행 (전년 {W}개월 합 < {a.gate:,})")
     if cmp_:
         print(f"참고: API volume_trend와 부호 불일치 {len(mism)}/{len(cmp_)}행 "
               f"({len(mism)/len(cmp_):.1%}) — 이 필드를 판정에 쓰면 안 되는 이유")

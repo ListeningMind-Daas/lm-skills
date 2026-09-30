@@ -19,7 +19,7 @@ description: |
   (브랜드 사전)를 받아 **월별 패널 · 메시지 수식어 구성 · 갭 경고**를 낸다.
 license: MIT
 metadata:
-  version: "1.3.0"
+  version: "1.3.1"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info; flags=monthly,share; traps=T1,T2,T3,T4,T5,T6,T8 -->

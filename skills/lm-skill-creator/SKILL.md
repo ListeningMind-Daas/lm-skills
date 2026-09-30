@@ -16,7 +16,7 @@ description: |
   아니다. 이 스킬은 **단일 목적 태스크 스킬**만 만든다.
 license: MIT
 metadata:
-  version: "0.2.1"
+  version: "0.2.3"
 ---
 
 <!-- lm-skill: kind=meta -->
@@ -127,6 +127,13 @@ python3 shared/verify_shared.py        # 계약·스크립트 사본이 정본�
 ```
 
 P0가 하나라도 있으면 배포하지 않는다. 분류 기준은 `references/audit-rubric.md`.
+
+감사기는 **이 스킬이 쓴 문서만** 본다 — 공유 문서 사본(`references/lm-data-contract.md`·`themes-schema.md`)과
+⬜가 남은 줄은 함정·4-Label 판정에서 빠진다. 표 칸 안의 ⬜도 미작성으로 센다. 4-Label은 라벨 이름이 아니라
+«이 스킬에서의 적용»이 적힌 줄이 있어야 센다.
+
+저장소 밖(`--out`을 다른 곳으로)에서 만든 스킬은 `verify_shared.py`가 찾지 못한다 — 그 검사는
+저장소 `skills/` 아래만 훑는다. 배포하려면 스킬 폴더를 저장소 `skills/`로 옮긴 뒤 두 명령을 돌린다.
 
 ### STEP 5 · 실행 평가 (크레딧 소모)
 

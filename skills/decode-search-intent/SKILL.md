@@ -19,7 +19,7 @@ description: |
   가중치 근거가 없는 점수라 단계 분류와 API 의도 라벨로 대신한다.
 license: MIT
 metadata:
-  version: "1.3.0"
+  version: "1.3.1"
 ---
 
 <!-- lm-skill: kind=task; connectors=intent_finder,keyword_info; flags=expand,share; traps=T5,T7,T8 -->
@@ -194,7 +194,8 @@ python3 scripts/coverage_curve.py --metrics ki_metrics.json --rules intent_dict.
 
 `coverage_curve.py`의 라운드는 **시간 순서**다. 같은 라운드에 시드별로 부른 호출은 `--round` 하나에
 쉼표로 나열한다 — 따로 넘기면 절단된 첫 호출 뒤의 작은 호출이 «마지막 라운드 기여율 1%»가 되어
-«커버리지 도달»로 읽힌다(평가 case1·2에서 실제로 났다). 절단 호출이 하나라도 있으면 판정은 «보류»다.
+«커버리지 도달»로 읽힌다(평가 case1·2에서 실제로 났다). 따로 넘기려면 라벨의 첫 `-` 앞을 같게(`R1-a`·`R1-b`)
+주면 한 판정 라운드로 묶인다. 절단 호출이 하나라도 있으면 판정은 «보류»이고, 이때 논브랜드 기여율도 판정하지 않는다.
 `build_universe.py`의 `--round`는 발견 라벨을 붙이는 용도라 시드마다 따로 둔다.
 
 - **T5** — `build_universe.py`가 행마다 `canonical`(NFKC → 소문자 → 변형치환 → 공백 제거)과 `dup_of`(같은 검색의

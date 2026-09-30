@@ -22,7 +22,7 @@ description: |
   이 스킬(최고가 커넥터)을 쓰지 않는다.
 license: MIT
 metadata:
-  version: "0.2.1"
+  version: "0.2.2"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info,path_finder; flags=expand; traps=T5,T7 -->

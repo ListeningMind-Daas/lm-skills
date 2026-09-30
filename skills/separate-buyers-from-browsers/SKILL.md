@@ -19,7 +19,7 @@ description: |
   (검색 데이터에는 구매 기록이 없다).
 license: MIT
 metadata:
-  version: "1.3.0"
+  version: "1.3.1"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info; flags=share; traps=T5,T8 -->
@@ -112,7 +112,8 @@ keyword_info(keywords=keyword_set, gl="kr", data_type="ads_metrics")   # 1 × N
 나눠 호출하고(2026-09-30 선크림: 1,484개 → 742 + 742), 합칠 때 ① `data` 배열을 이어 붙이고 ② `request_detail.keywords`도
 이어 붙이며 ③ `cost_detail.total_cost`를 더해 하나의 `metrics.json`으로 저장한다. `request_detail`을 합치기 번거로우면
 요청한 키워드 배열 전체(분할 전 목록)를 따로 저장해 STEP 4 `--requested`에 준다 — 한쪽 덩어리의 응답만 주면 다른 덩어리
-키워드가 전부 «미반환»으로 잡힌다. 과금은 덩어리마다 요청 수이고, 총액은 `1 × N` 그대로다.
+키워드가 전부 «미반환»으로 잡힌다. 과금은 덩어리마다 요청 수이고, 총액은 `1 × N` 그대로다. 한 덩어리 응답 안에서 같은 키워드·같은 지표의 행이
+반복돼도 손으로 지우지 않는다 — `build_universe.py`가 합치고 몇 행 합쳤는지 출력한다. 병합 형식은 `references/lm-data-contract.md` «keyword_info 1회 상한과 응답 병합».
 
 ### STEP 2 · 의도 사전 작성
 

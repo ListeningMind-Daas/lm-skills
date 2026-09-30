@@ -30,14 +30,26 @@ TRAP_REQUIRES = {
 }
 
 
-def read_all(root, suffixes=(".md",), skip_contract=True):
-    """정본 사본은 제외하고 읽는다 — 계약은 모든 스킬이 갖고 있으므로, 사본에 적힌 처리를
-    이 스킬이 한 것으로 세면 미처리 스킬도 전부 통과해버린다."""
+# 공유 문서 사본 — 모든 스킬이 같은 사본을 갖는다. 사본에 적힌 처리를 이 스킬이 한 것으로 세면
+# 빈 골격도 통과한다(2026-09-30 실측: themes-schema.md 사본의 단어로 T5·T8 이 충족됐다).
+# 저장소 밖에서 만든 스킬도 걸리도록 이름 목록을 기본으로 두고, 저장소 안이면 shared/references 를 더한다.
+SHARED_DOCS = {"lm-data-contract.md", "themes-schema.md"}
+_KIT_REFS = pathlib.Path(__file__).resolve().parents[3] / "shared" / "references"
+if _KIT_REFS.is_dir():
+    SHARED_DOCS |= {f.name for f in _KIT_REFS.glob("*.md")}
+
+# 미작성 표시 — 골격이 박는 ⬜. «⬜로 박는다»처럼 기호를 설명하는 문장(조사가 바로 붙음)은 제외한다.
+HOLE = re.compile(r"⬜(?![로를가는이의와과도/])")
+
+
+def read_all(root, suffixes=(".md",), skip_shared=True):
+    """공유 문서 사본은 제외하고 읽는다 — 사본에 적힌 처리를 이 스킬이 한 것으로 세면
+    미처리 스킬도 전부 통과해버린다."""
     out = {}
     for f in sorted(root.rglob("*")):
         if not f.is_file() or f.suffix not in suffixes or "evals" in f.parts:
             continue
-        if skip_contract and f.name == "lm-data-contract.md":
+        if skip_shared and "references" in f.parts and f.name in SHARED_DOCS:
             continue
         out[f] = f.read_text(encoding="utf-8", errors="ignore")
     return out
@@ -63,19 +75,30 @@ def main():
     raw = "\n".join(docs.values())
     # 함정 «의무 표»는 선언일 뿐 구현이 아니다. 표의 행만 보고 처리했다고 세면
     # 골격 상태의 스킬이 그대로 통과한다 — 그래서 표 영역을 빼고 본문만 검사한다.
+    # 미작성(⬜) 줄도 뺀다 — 골격의 안내문(«데이터 기준월 확인을 넣는다» 등)이 함정 단어를 담고 있어
+    # 채우지 않은 채로 T1·T4 가 충족됐다(2026-09-30 실측).
     text = "\n".join(ln for ln in raw.splitlines()
-                     if not (ln.lstrip().startswith("| T") and "|" in ln[3:]))
+                     if not (ln.lstrip().startswith("| T") and "|" in ln[3:]) and not HOLE.search(ln))
     code = "\n".join(read_all(root, (".py",)).values())
     head = skill_md.read_text(encoding="utf-8")[:4000]
     F = {"P0": [], "P1": [], "P2": []}
     def add(sev, title, detail): F[sev].append({"title": title, "detail": detail})
 
-    # ── 미작성 골격
-    holes = len([ln for ln in raw.splitlines()
-                 if re.match(r"^\s*(\|\s*)?⬜\s*(채울|미작성|쓸|$)", ln)
-                 or re.match(r"^\s*\w+\s*:\s*TODO", ln)])
+    # ── 미작성 골격 — 줄 맨 앞만 보던 이전 판은 표 칸 안의 ⬜(4-Label 4칸 · 함정 표 8칸)를 놓쳐
+    # 골격 ⬜ 19개 중 3개만 잡았다(2026-09-30 실측). 위치와 무관하게 기호마다 센다.
+    where = []
+    for f, body in docs.items():
+        for i, ln in enumerate(body.splitlines(), 1):
+            n = len(HOLE.findall(ln)) + (1 if re.match(r"^\s*\w+\s*:\s*TODO", ln) else 0)
+            if n:
+                where.append((f.relative_to(root).as_posix(), i, n))
+    holes = sum(n for *_, n in where)
     if holes:
-        add("P0", f"미작성 항목 {holes}건", "골격 상태다(⬜/TODO). 채우기 전에는 감사 대상이 아니다")
+        at = ", ".join(f"{p}:{i}" for p, i, _ in where[:5]) + (" …" if len(where) > 5 else "")
+        add("P0", f"미작성 항목 {holes}건", f"골격 상태다(⬜/TODO) — {at}. 채우기 전에는 감사 대상이 아니다")
+    ev = root / "evals" / "evals.json"
+    if ev.is_file() and HOLE.search(ev.read_text(encoding="utf-8", errors="ignore")):
+        add("P1", "eval 케이스가 미작성이다", "evals/evals.json 에 ⬜ 가 남아 있다 — 개선 루프의 기준선이 없다")
 
     # ── frontmatter
     fm = re.match(r"^---\n(.*?)\n---", head, re.S)
@@ -147,10 +170,18 @@ def main():
         sev = "P0" if m in ("T1 기준월·지연", "T3 volume_trend 대체", "T6 결측 월", "T7 절단 검사") else "P1"
         add(sev, f"함정 미처리 — {m}", "데이터 계약 §3이 요구하는 처리가 문서에 없다")
 
-    # ── 4-Label
-    labels = sum(1 for k in ("실제 데이터", "추정", "가정", "데이터 공백") if k in text)
+    # ── 4-Label — 라벨 이름만 세면 칸이 빈 표도 통과한다. 라벨마다 «이 스킬에서의 적용»이 적힌 줄이
+    # 있어야 센다(라벨 이름·기호를 빼고 남는 글자가 있어야 한다). ⬜ 줄은 위에서 이미 빠졌다.
+    def applied(label):
+        for ln in text.splitlines():
+            if label in ln:
+                rest = re.sub(r"[`\[\]|*\s·:—-]", "", ln.replace(label, ""))
+                if len(rest) >= 4:
+                    return True
+        return False
+    labels = sum(1 for k in ("실제 데이터", "추정", "가정", "데이터 공백") if applied(k))
     if a.kind == "task" and labels < 3:
-        add("P0", "4-Label 규율 없음", f"발견 {labels}/4 — 측정·파생·가정·공백이 구분되지 않는다")
+        add("P0", "4-Label 규율 없음", f"적용이 적힌 라벨 {labels}/4 — 측정·파생·가정·공백이 구분되지 않는다")
 
     # ── 정본 사본
     copy = root / "references" / "lm-data-contract.md"

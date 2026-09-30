@@ -23,7 +23,7 @@ description: |
   만들지, 분석 결론을 내지 않는다.
 license: MIT
 metadata:
-  version: "0.3.1"
+  version: "0.3.2"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info,intent_finder,cluster_finder,path_finder,serp,trend_finder; flags=monthly,expand; traps=T1,T2,T3,T4,T5,T6,T7 -->

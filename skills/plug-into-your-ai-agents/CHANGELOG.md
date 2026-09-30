@@ -3,6 +3,15 @@
 판 번호의 정본은 SKILL.md frontmatter `metadata.version` 이다. 새 판을 낼 때 두 곳을 같이 고친다.
 결함은 «무엇이 몇 % 틀렸다»처럼 근거 수치와 함께 적는다.
 
+## v0.3.2 (2026-09-30 · lm-skills 1.6.2)
+
+공유 스크립트 결함 수정 — 2026-09-30 선크림(KR) 예시 실행에서 보고된 것. 저장된 분석 폴더로 0크레딧 재현 후 고쳤다.
+
+- `trend_yoy.py` — «게이트 미만·계산 불가·같은 검색 중복 N행 제외» 한 줄을 사유별 세 수(계산 불가 · 같은 검색의 중복 · 게이트 미만)로 나눴다(benchmark-competitors 실측: 제외 33행 = 계산 불가 1 + 게이트 미만 32). `--ref-month`가 비교 창의 끝 달이며 본문 분석 창에 맞출 때 준다는 것을 도움말에 적었다. 같은 keyword의 완전 중복 행도 합친다.
+- `series_dedup.py` — `collapse_identical`(같은 keyword의 완전 중복 행 합치기 · 내용이 다르면 첫 행만 쓰고 경고)을 추가했다. `build_universe`·`coverage_curve`·`trend_yoy`가 먼저 이것을 거친다.
+- `selftest.py` — 위 결함 여섯 가지의 회귀 검사를 추가했다(고치기 전 스크립트에서는 전부 실패함을 확인).
+- 계약 v1.1 — keyword_info 1회 1,000키워드 상한과 나눠 호출한 응답의 병합법(`data`·`request_detail`·`cost_detail`·`used_credits`)을 적고, T5에 완전 중복 행 합치기(⓪)를 넣었다.
+
 ## v0.3.1 (2026-09-29 · lm-skills 1.6.0)
 
 - 변경 이력을 SKILL.md 에서 이 파일로 옮기고, 판 번호를 frontmatter `metadata.version` 으로 옮겼다. 분석 절차·산출물은 바뀌지 않았다.

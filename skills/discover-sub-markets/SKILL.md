@@ -18,7 +18,7 @@ description: |
   공동검색 구조만 본다 — 카테고리 전체 지도가 아니다.
 license: MIT
 metadata:
-  version: "1.2.1"
+  version: "1.2.2"
 ---
 
 <!-- lm-skill: kind=task; connectors=cluster_finder,keyword_info; flags=monthly,expand,share; traps=T1,T2,T3,T4,T5,T6,T7,T8 -->

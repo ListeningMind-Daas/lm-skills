@@ -17,7 +17,7 @@ description: |
   판매량 예측도, PMF 점수도 내지 않는다.
 license: MIT
 metadata:
-  version: "1.3.0"
+  version: "1.3.1"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info,intent_finder; flags=monthly,expand,share; traps=T1,T2,T3,T4,T5,T6,T7,T8 -->
@@ -186,6 +186,9 @@ python3 scripts/coverage_curve.py --metrics metrics_stage1.json \
     --round "R1-b=if_다이어트아이스크림.json@50"
 ```
 
+- 라벨의 첫 `-` 앞이 같은 연속 라운드(`R1-a`·`R1-b`)는 **한 판정 라운드로 묶여** 판정된다 — 묶음 기여율은
+  호출 순서와 무관하다. 라벨을 시드마다 다르게(`무기자차`·`톤업`) 주면 마지막 호출 한 건으로 판정되어
+  순서에 따라 «도달»과 «한 라운드 더»가 갈린다(2026-09-30 선크림 실측). 스크립트는 시드 출처로 이를 감지하면 «보류»를 낸다.
 - 반환 수가 limit에 **붙은 호출**은 수렴이 아니라 잘린 것이다. 이때 해당 층 볼륨은 **하한**이며,
   «이 층의 수요는 이만큼»이라고 쓰지 않는다. limit을 올려 재확장할지 예산과 함께 사용자에게 묻는다.
 - 확장은 기본 1라운드다. 목표·문제 층의 논브랜드 기여가 임계 위로 남으면 그 층만 한 라운드 더 돈다.
