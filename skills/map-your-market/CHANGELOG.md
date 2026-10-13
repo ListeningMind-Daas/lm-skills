@@ -3,6 +3,14 @@
 판 번호의 정본은 SKILL.md frontmatter `metadata.version` 이다. 새 판을 낼 때 두 곳을 같이 고친다.
 결함은 «무엇이 몇 % 틀렸다»처럼 근거 수치와 함께 적는다.
 
+## v1.2.2 (2026-10-13 · lm-skills 1.7.0)
+
+공유 스크립트 사본 갱신 — 분석 절차·산출 컬럼은 바뀌지 않았다.
+
+- 계약 v1.2 사본 — T4 기저 게이트를 묶음·그룹 순위 문장에도 적용 · T6 여러 창(연도)을 나란히 비교하는 합계는 모든 창에 값이 있는 검색어로 모집단 고정(2026-10-13 실습 리허설 실행 평가에서 나온 결함).
+- `selftest.py` — SKILL.md가 비었거나 골격 자리표시자(⬜로 표시된 미작성 칸 등)가 남아 있으면 실패한다. 이전에는 스크립트만 돌려 빈 SKILL.md에서도 «통과»를 냈다(2026-10-12 워크숍 사전 실행, lm-skill-creator 0.2.4)
+- `build_universe.py`·`check_refmonth.py`·`coverage_curve.py`·`series_dedup.py`·`trend_yoy.py`·`selftest.py` — Windows cp949 콘솔에서 `—`·`⚠` 출력 시 UnicodeEncodeError로 죽던 것을 막는다(표준 출력을 UTF-8로). 이전 판은 cp949 콘솔 모사에서 출력 중 죽었다(`trend_yoy.py --help`·`check_refmonth.py` 실행 등)
+
 ## v1.2.1 (2026-09-30 · lm-skills 1.6.2)
 
 공유 스크립트 결함 수정 — 2026-09-30 선크림(KR) 예시 실행에서 보고된 것. 저장된 분석 폴더로 0크레딧 재현 후 고쳤다.

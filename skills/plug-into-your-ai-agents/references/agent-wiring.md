@@ -12,7 +12,8 @@ from lm_tools import make_runtime_from_env, tool_definitions, SYSTEM_RULES
 TOOLS = ["lm_keyword_info", "lm_intent_finder"]          # 에이전트에 줄 도구 — 두 곳에 같은 목록
 tools = tool_definitions("claude", TOOLS)
 rt = make_runtime_from_env(budget=1500, ledger_path="ledger.jsonl", raw_dir="raw",
-                           tools=TOOLS, variant_rules={"썬": "선"})
+                           tools=TOOLS, variant_rules={"썬": "선"},
+                           per_call_cap=1000, market="kr")   # 1회 상한(권장값 [가정]) · 세션 시장 고정
 # dry-run 단계에서는 대신:
 #   from lm_tools import Runtime, MockTransport
 #   rt = Runtime(MockTransport("assets/dryrun/fixtures"), 1500, "ledger.jsonl",
@@ -23,6 +24,9 @@ rt = make_runtime_from_env(budget=1500, ledger_path="ledger.jsonl", raw_dir="raw
 이름을 추측해 부르면 나간다. 명세에서 자동 추가된 «검토 전» 도구는 `tools`에 이름을 넣어야만 열린다. 이미 만든 JSON이 있으면 `tools_from_definitions("tools.claude.json")`로 읽어 넘긴다.
 `variant_rules`는 시장의 철자 변형 치환 사전이다(인라인 dict · JSON 문자열 · 사전 파일 · themes.json의
 `rules.변형치환`) — 없으면 공백 규칙만 쓰고, 한국어 선/썬 같은 변형은 따로 센다.
+`per_call_cap`은 호출 1건의 사전 추정 상한이다(기본 None = 끔). 세션 예산만 두면 기본 limit의 cluster 한 번
+(추정 5,200)·path 한 번(추정 2,450)이 그대로 나간다 — 1,000이면 cluster는 limit 16, path는 limit 7까지다.
+`market`은 `"kr"`처럼 값을 주거나 `"auto"`(처음 보낸 호출의 gl로 잠금)로 준다.
 
 주소(`LM_API_BASE`)와 키(`LM_API_KEY`)는 환경변수로만 넣는다. 코드·저장소·로그·원장에
 남기지 않는다. 응답 원본을 보존할 때도 요청 헤더는 저장하지 않는다.
@@ -74,6 +78,8 @@ def lm_keyword_info(keywords: list[str], gl: str, data_type: str) -> dict:
 |---|---|---|
 | `tool_not_enabled` | 에이전트에 주지 않은 도구 호출 | 받은 도구만 쓴다 — 필요하면 사용자에게 도구 추가를 요청 |
 | `budget_guard` | 호출 전 추정이 남은 예산을 넘음 | `remaining`을 사용자에게 알리고 limit·키워드 수를 줄인다 |
+| `per_call_cap` | 호출 전 추정이 호출 1건 상한을 넘음(켰을 때만) | `max_limit` 이하로 limit을 줄여 다시 요청 — 없으면 입력 수를 줄이거나 사용자에게 알린다 |
+| `market_lock` | 세션 시장과 다른 `gl` | 이 세션에서는 다른 시장을 조회하지 않는다 — 새 세션·새 예산은 사람이 연다 |
 | `two_stage` | `ads_metrics`로 확인하지 않은 키워드에 `all` 요청 | `unscreened`를 먼저 `ads_metrics`로 조회 |
 | `halted_after_overrun` | 실제 비용이 가정 상한을 넘어 예산 초과 | 멈추고 사용자에게 보고 — 새 예산은 사람이 연다 |
 | `http` | 재시도 후에도 실패 | `detail`의 사유를 그대로 전한다. 원인을 추측하지 않는다 |
@@ -97,7 +103,8 @@ def lm_keyword_info(keywords: list[str], gl: str, data_type: str) -> dict:
 ```
 
 `expect`는 `ok` · `blocked` · `error`, `expect_reason`은 차단 사유(`two_stage` · `budget_guard` ·
-`tool_not_enabled` · `halted_after_overrun` …)다.
+`per_call_cap` · `market_lock` · `tool_not_enabled` · `halted_after_overrun` …)다. 시나리오 최상위에
+`"config": {"per_call_cap": 1000, "market": "kr"}`를 두면 dry-run이 그 가드를 켠다(`--per-call-cap`·`--market`이 우선).
 
 **픽스처** (`my-fixtures/<도구명>.json`) — 응답 목록. 항목 필드:
 
@@ -107,6 +114,7 @@ def lm_keyword_info(keywords: list[str], gl: str, data_type: str) -> dict:
 | `status` | HTTP 상태(기본 200). 429·5xx로 재시도 경로를 시험한다 |
 | `match` | 요청 인자의 부분집합(예: `{"data_type": "all"}` · `{"keyword": "선크림"}`). 있으면 **호출 순서와 무관하게** 인자로 고른다 |
 | `times` | `match` 항목을 쓸 횟수(예: 429 한 번 뒤 정상). 없으면 계속 쓴다 |
+| `echo_keywords` | `true`면 응답 행을 요청 키워드에 맞춘다 — 같은 이름 행은 그대로, 없는 이름은 요청 밖의 남는 행 이름을 바꿔 채우고(`_mock_renamed_from`), 남은 요청 밖 행은 버리며, `request_detail`·`cost_detail`을 요청 수로 맞춘다. **합성 픽스처에만** 쓴다 — 실측 원문은 «함께 온 변형 행»까지 그대로 재생해야 한다 |
 | `note` | 설명(런타임은 읽지 않는다) |
 
 `match`가 없는 항목은 순서대로 소비되고 마지막 하나가 반복된다(이전 판과 같은 동작). 맞는 항목이 없으면

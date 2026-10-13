@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 .DS_Store
+# 우리 회사 스킬의 작업 · 실행 결과(맥락 파일 · request.json · 원본 응답 · 리포트) — 커밋하지 않는다
+work/

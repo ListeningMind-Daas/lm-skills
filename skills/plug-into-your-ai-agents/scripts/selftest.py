@@ -13,11 +13,40 @@
 
     python3 scripts/selftest.py        # 스킬 폴더에서 실행
 """
-import csv, json, os, pathlib, subprocess, sys, tempfile
+import csv, json, os, pathlib, re, subprocess, sys, tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 REF_MONTHS = [f"{y}-{m:02d}" for y in (2023, 2024, 2025, 2026) for m in range(1, 13)][:48]
 LAST = "2026-07"
+
+# 골격 자리표시자 — `new_skill.py`가 박는 것들. 남아 있으면 SKILL.md가 아직 골격이다.
+# 이전 판은 스크립트만 돌려 SKILL.md가 비어 있어도 «통과»를 냈다(2026-10-12 워크숍 사전 실행 실측).
+# «⬜로 박는다»처럼 기호를 설명하는 문장(조사가 바로 붙음)은 제외한다 — 감사기와 같은 기준.
+HOLE = re.compile(r"⬜(?![로를가는이의와과도/])")
+PLACEHOLDERS = ("(트리거 발화 1)", "(이 스킬에서의 용도를 쓸 것)", "| (결정식) |",
+                "(사용자가 스킬 이름을 말하지 않아도 켜야 하는 상황을 여기에 쓴다.)")
+# 스크립트 출력은 UTF-8로 받는다 — Windows(cp949) 기본 인코딩이면 ⚠·— 를 찍다 하위 프로세스가 죽는다
+CHILD_ENV = dict(os.environ, PYTHONIOENCODING="utf-8")
+
+
+def utf8_console():
+    for s in (sys.stdout, sys.stderr):
+        try:
+            s.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
+def skeleton_left(skill_md: pathlib.Path):
+    """SKILL.md가 비었거나 골격 자리표시자가 남았으면 (줄, 내용) 목록을 돌려준다."""
+    body = skill_md.read_text(encoding="utf-8", errors="ignore")
+    if not body.strip():
+        return [(0, "SKILL.md가 비어 있다")]
+    hits = []
+    for i, ln in enumerate(body.splitlines(), 1):
+        if HOLE.search(ln) or any(ph in ln for ph in PLACEHOLDERS):
+            hits.append((i, ln.strip()[:60]))
+    return hits
 
 
 def fixture(tmp: pathlib.Path):
@@ -67,7 +96,8 @@ def fixture(tmp: pathlib.Path):
 
 
 def run(cmd, tmp):
-    p = subprocess.run([sys.executable] + cmd, cwd=tmp, capture_output=True, text=True)
+    p = subprocess.run([sys.executable] + cmd, cwd=tmp, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace", env=CHILD_ENV)
     return p.returncode, p.stdout + p.stderr
 
 
@@ -76,8 +106,18 @@ def header(path):
 
 
 def main():
+    utf8_console()
     fails, skipped = [], []
     S = str(HERE)
+
+    # 0. 문서 — 스크립트가 돌아도 SKILL.md가 골격이면 «문서의 예시 명령»이 없다. 정본 폴더(shared/)에서는 건너뛴다.
+    skill_md = HERE.parent / "SKILL.md"
+    if skill_md.is_file():
+        left = skeleton_left(skill_md)
+        if left:
+            at = ", ".join(f"SKILL.md:{i}" for i, _ in left[:5]) + (" …" if len(left) > 5 else "")
+            fails.append(("SKILL.md", f"골격 자리표시자 {len(left)}곳이 남아 있다(⬜·괄호 안내문) — 채운 뒤 다시 돌릴 것",
+                          at))
 
     def has(name):
         if (HERE / name).is_file():
@@ -207,12 +247,64 @@ def main():
             if apply_rules("stickvacuum", {"stickvac": "stickvacuum"}) != "stickvacuum":
                 fails.append(("series_dedup", "변형치환이 멱등이 아니다(stickvacuumuum)", ""))
 
+        # 공통 리포트 렌더러 — 견본 입력이 렌더되고, 계약 위반(경계 문장 없음 · 증감률만 있는 표)은 거부되는가
+        if has("render_report.py"):
+            own = HERE.parent / "assets" / "report.example.json"         # 스킬 자기 견본 — 스킬이 고친다
+            example = HERE.parent / "assets" / "report.sample.json"      # 공유 견본 — 고치지 않는다
+            if own.is_file():
+                rc, out = run([f"{S}/render_report.py", str(own), "-o", "own.html"], tmp)
+                if rc:
+                    fails.append(("render_report", "스킬 견본(assets/report.example.json)이 렌더링 계약을 어긴다", out[-400:]))
+            elif HERE.name == "scripts" and (HERE.parent / "SKILL.md").is_file():
+                fails.append(("render_report", "스킬 견본 assets/report.example.json 이 없다", ""))
+            if not example.is_file():
+                fails.append(("render_report", "공유 견본 assets/report.sample.json 이 없다 — 렌더 계약을 시험할 수 없다", ""))
+            else:
+                rc, out = run([f"{S}/render_report.py", str(example), "-o", "report.html"], tmp)
+                page = (tmp / "report.html").read_text(encoding="utf-8") if (tmp / "report.html").is_file() else ""
+                if rc or 'class="boundary"' not in page or "{{" in page:
+                    fails.append(("render_report", "견본 입력이 렌더되지 않았다", out[-300:]))
+                bad = json.loads(example.read_text(encoding="utf-8"))
+                bad.pop("boundary", None)
+                for sec in bad.get("sections", []):
+                    for blk in sec.get("blocks", []):
+                        if blk.get("type") == "table":
+                            for col in blk.get("columns", []):
+                                if col.get("role") in ("base", "abs_change"):
+                                    col.pop("role")
+                (tmp / "bad.json").write_text(json.dumps(bad, ensure_ascii=False), encoding="utf-8")
+                rc, out = run([f"{S}/render_report.py", "bad.json", "--check"], tmp)
+                if rc != 1 or "boundary" not in out or "증감률 열만" not in out:
+                    fails.append(("render_report", "계약 위반(경계 문장 없음 · 증감률만 있는 표)을 거부하지 못했다", out[-300:]))
+
+    # 우리 맥락 — 맥락 파일이 있으면 스키마 필수 키 · 검증표 질문 ID 를 본다(references/context-schema.md)
+    ctx_f, vt_f = HERE.parent / "assets" / "context.json", HERE.parent / "assets" / "validation-table.json"
+    if ctx_f.is_file():
+        try:
+            ctx = json.loads(ctx_f.read_text(encoding="utf-8"))
+            need = [("decision", "who_decides"), ("market", "gl"), ("market", "category_boundary"), ("brands", "ours")]
+            miss = [f"{a}.{b}" for a, b in need if not (ctx.get(a) or {}).get(b)] + \
+                   [k for k in ("guardrails", "request_examples") if not ctx.get(k)]
+            if ctx.get("schema") != "lm-skill-context/v1" or miss:
+                fails.append(("context.json", "맥락 파일 스키마가 맞지 않는다", f"schema={ctx.get('schema')} · 빈 키 {miss}"))
+        except ValueError as e:
+            fails.append(("context.json", "JSON 오류", str(e)[:200]))
+        if not vt_f.is_file():
+            fails.append(("validation-table.json", "맥락 파일은 있는데 검증표가 없다", ""))
+        else:
+            try:
+                ids = [q.get("id") for q in json.loads(vt_f.read_text(encoding="utf-8")).get("questions") or []]
+                if not ids or not all(ids) or len(set(ids)) != len(ids):
+                    fails.append(("validation-table.json", "질문 ID 가 없거나 비었거나 겹친다", str(ids)[:200]))
+            except ValueError as e:
+                fails.append(("validation-table.json", "JSON 오류", str(e)[:200]))
+
     # 스킬 고유 스크립트 검증 — scripts/selftest_*.py 가 있으면 함께 돌린다(중첩 실행 방지)
     if not os.environ.get("LM_SELFTEST_NESTED"):
-        env = dict(os.environ, LM_SELFTEST_NESTED="1")
+        env = dict(CHILD_ENV, LM_SELFTEST_NESTED="1")
         for extra in sorted(HERE.glob("selftest_*.py")):
             r = subprocess.run([sys.executable, str(extra)], cwd=HERE.parent, env=env,
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, encoding="utf-8", errors="replace")
             if r.returncode:
                 fails.append((extra.name, "스킬 고유 selftest 실패", (r.stdout + r.stderr)[-300:]))
 
@@ -227,7 +319,7 @@ def main():
         print("\n문서의 예시와 스크립트가 어긋나 있다. 배포 전에 고칠 것.")
         return 1
     checked = len([n for n in ("check_refmonth.py", "trend_yoy.py", "build_universe.py",
-                               "coverage_curve.py", "trend_signals.py", "series_dedup.py") if (HERE / n).is_file()])
+                               "coverage_curve.py", "trend_signals.py", "series_dedup.py", "render_report.py") if (HERE / n).is_file()])
     print(f"통과 — 배치된 스크립트 {checked}종 계약 검증 완료 (API 호출 없음)")
     return 0
 

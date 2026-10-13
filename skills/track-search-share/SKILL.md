@@ -20,7 +20,7 @@ description: |
   `spot-trends`로 보낸다. 이 스킬은 **이미 정한 브랜드들의 몫**만 잰다.
 license: MIT
 metadata:
-  version: "0.3.2"
+  version: "0.3.3"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info,intent_finder; flags=monthly,expand,share; traps=T1,T2,T3,T4,T5,T6,T7,T8 -->

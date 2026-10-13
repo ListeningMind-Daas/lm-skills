@@ -18,7 +18,7 @@ description: |
   목적이면 `spot-trends`로 간다. 리뷰·설문·CS 로그 같은 내부 VOC 분석은 이 스킬의 범위가 아니다.
 license: MIT
 metadata:
-  version: "1.2.2"
+  version: "1.2.3"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info,intent_finder; flags=monthly,expand,share; traps=T1,T2,T3,T4,T5,T6,T7,T8 -->

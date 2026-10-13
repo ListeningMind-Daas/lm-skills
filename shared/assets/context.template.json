@@ -1,0 +1,35 @@
+{
+ "schema": "lm-skill-context/v1",
+ "skill": "⬜ 스킬 이름",
+ "decision": {
+  "who_decides": "⬜ 누가 이 답으로 무엇을 결정하나",
+  "question_example": "⬜ 현업에서 받는 질문 원문"
+ },
+ "market": {
+  "gl": "⬜ 국가 하나(kr · us · jp)",
+  "category_boundary": "⬜ 무엇이 안이고 무엇이 밖인지 한 문장"
+ },
+ "brands": {
+  "ours": [
+   "⬜ 우리 브랜드 · 제품 라인"
+  ],
+  "competitors": [
+   "⬜ 경쟁 브랜드"
+  ],
+  "not_brands": [
+   "⬜ 브랜드가 아닌 것(판매 채널 · 커뮤니티)"
+  ]
+ },
+ "terms": [
+  "⬜ 우리 용어 · 동의어(예: 수분크림≠보습크림 구분)"
+ ],
+ "internal_metrics": [
+  "⬜ 함께 볼 내부 지표 이름 — 값은 넣지 않는다"
+ ],
+ "guardrails": [
+  "⬜ 업종 표현 규칙(예: 효능 단정 금지)"
+ ],
+ "request_examples": [
+  "⬜ 이 스킬을 켤 요청 예시"
+ ]
+}

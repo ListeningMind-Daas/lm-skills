@@ -5,18 +5,29 @@ cluster_finder는 군집(communities)과 관계(rels)만 준다. 볼륨도, 허�
 그래서 이 스크립트가 하는 일은 세 가지다.
 
   budget 호출 전 예산 상한 — 보수 상한과 관측 기반 상한 [가정]을 함께 낸다.
+         --pilot-nodes(cluster_finder/keyword_list 파일럿의 반환 키워드 수)를 주면 본 호출 금액을 정확히 낸다.
   nodes  응답에서 고유 키워드를 뽑고, 관계 수가 limit에 붙었는지(절단)·한 허브에 몰렸는지(별 모양
          퇴화) 검사한다. 고유 키워드 수는 곧 이 호출의 과금 단위이자 다음 keyword_info 호출의 입력이다.
   score  build_universe.py 산출(키워드별 볼륨·브랜드·테마·canonical)을 군집 단위로 합쳐
          하위 시장 유형을 판정하고, 2단 조회(all) 대상을 고른다.
+  merge-all  STEP 1 시드 all 응답과 STEP 6 2단 all 응답을 키워드당 한 행으로 합친다(trend_yoy.py 입력 1개).
+
+시드 대조(nodes·score 공통): 원 표기 → 공백·대소문자 무시 → 변형치환 규칙(--rules, themes.json) 순으로
+대조하고, 어느 단계에서 걸렸는지 출력한다. API가 시드를 다른 표기로 돌려주는 경우가 있어서다(선크림 → 썬크림).
 
 사용법:
   python3 submarkets.py budget --limit 500
-  python3 submarkets.py nodes cluster.json --limit 500 --seed 캠핑의자 -o nodes.json
+  python3 submarkets.py budget --limit 90 --pilot-nodes 89 --cap 5500     # 파일럿 후 정확한 금액
+  python3 submarkets.py nodes cluster.json --limit 500 --seed 캠핑의자 [--rules themes.json] \\
+      [--pilot pilot_kwlist.json] -o nodes.json
   python3 submarkets.py score cluster.json --universe universe.csv --seed 캠핑의자 --limit 500 \\
       --seed-all seed_all.json -o submarkets.csv --keywords-out submarket_keywords.csv \\
       --pick-out stage2_keywords.json
+  python3 submarkets.py merge-all seed_all.json all.json -o all_plus_seed.json   # STEP 6 trend_yoy 입력
   python3 submarkets.py score ... --seed-all seed_all.json --trend trend.csv   # STEP 7 (대상 재선정 없음)
+
+종료 코드: 0 정상 · 2 입력 거부(빈 응답·빈 시드·그래프에 없는 시드) · 3 score 기준월 없음.
+| tee로 출력을 저장하면 종료 코드가 tee의 것(0)이 된다 — set -o pipefail을 먼저 켜거나 파이프 없이 리다이렉트한다.
 
 rels 전처리: 응답에는 같은 쌍이 방향만 바꿔 두 번 들어 있는 경우가 있다(실측 3건 중 2건에서 1쌍).
 degree·허브·시드 거리는 **무방향 고유 간선**으로 계산한다. 절단 판정은 반환된 행 수 그대로 limit과 비교한다.
@@ -36,8 +47,11 @@ degree·허브·시드 거리는 **무방향 고유 간선**으로 계산한다.
   숨은 하위 시장 후보   위를 통과하고 시드까지의 최단 거리가 2 이상(또는 연결 없음)
 brand_dominated 컬럼은 유형과 별개로 모든 군집에 붙는다 — 시드 코어가 브랜드 지배여도 드러난다.
 """
-import argparse, csv, json, statistics, sys, unicodedata
+import argparse, csv, json, pathlib, statistics, sys, unicodedata
 from collections import Counter, defaultdict, deque
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from series_dedup import canon as rule_canon, load_rules  # noqa: E402  build_universe와 같은 canonical 규칙
 
 TYPE_ORDER = ["숨은 하위 시장 후보", "인접 하위 시장", "시드 코어", "규모 미달",
               "소형·단일", "브랜드 지배", "지표 부족"]
@@ -54,11 +68,44 @@ KW_COLUMNS = ["keyword", "canonical", "community_id", "degree", "volume_total", 
               "theme_primary", "dup_of", "is_group_rep", "group_volume_lo", "group_volume_hi"]
 
 STAR_SHARE = 0.8        # [가정] 한 노드가 고유 간선의 이 비율 이상에 닿으면 별 모양 퇴화
-TIGHT_OBS = "2026-09-28 관측 4건 모두 노드 ≤ limit+1 (예: limit 50 → 노드 50·44·50)"
+TIGHT_OBS = "2026-09-28~30 관측 5건 모두 노드 ≤ limit+1 (예: limit 50 → 노드 50·44·50 · limit 90 → 89)"
+PILOT_OBS = "파일럿 노드 수 = 본 호출 노드 수 — 2026-09-30 선크림 1건에서 집합까지 일치(limit 90 → 89 · 4,600)"
 
 
 def basic(kw):
     return unicodedata.normalize("NFKC", kw).lower().replace(" ", "")
+
+
+def near_one(a, b):
+    """두 문자열이 길이가 같고 한 글자만 다른가 — 표기변형 후보 힌트용 [추정]."""
+    return len(a) == len(b) and sum(x != y for x, y in zip(a, b)) == 1
+
+
+def match_seed(seed, graph, canon_of):
+    """(시드 노드 집합, 대조 방식). 방식: 원 표기 · 공백·대소문자 · 변형치환 규칙 · "" (없음).
+
+    시드 노드는 공백·대소문자 무시 또는 canonical(변형치환 포함)이 같은 노드 전부다. 방식은 그중 가장 엄격하게
+    걸린 단계를 적는다. canon_of(k)는 nodes(--rules)와 score(universe canonical → --rules)가 같은 규칙을 쓴다.
+    """
+    b, c = basic(seed), canon_of(seed)
+    found = {k for k in graph if basic(k) == b or canon_of(k) == c}
+    if not found:
+        return set(), ""
+    if seed in found:
+        return found, "원 표기"
+    if any(basic(k) == b for k in found):
+        return found, "공백·대소문자"
+    return found, "변형치환 규칙"
+
+
+def seed_match_line(seed, nodes, how):
+    shown = ", ".join(f"«{k}»" for k in sorted(nodes)[:5])
+    if how == "원 표기":
+        return f"시드 «{seed}» — 그래프에 원 표기 그대로 있다 (대응 노드 {len(nodes)}개: {shown})"
+    if how == "공백·대소문자":
+        return f"시드 «{seed}» — 공백·대소문자를 무시하면 {shown}에 대응한다"
+    return (f"시드 «{seed}» — 원 표기로는 그래프에 없고, 변형치환 규칙(rules.변형치환)으로 {shown}에 대응한다. "
+            "API가 시드를 다른 표기로 돌려준 것이다 — score도 같은 규칙으로 대조한다. 리포트에 대응 표기를 적는다")
 
 
 def load_cluster(path):
@@ -129,12 +176,36 @@ def star_lines(hub, share, rels, seed_nodes=None):
 def cmd_budget(a):
     cons_n, tight_n = 2 * a.limit, a.limit + 1
     base = 10 + 150
+    if a.pilot_nodes is not None:
+        n, pilot = a.pilot_nodes, 30 + 2 * a.pilot_nodes
+        cf = 150 + 50 * n
+        total = 10 + pilot + cf + n
+        print(f"파일럿 반영 예산 (limit {a.limit:,} · cluster_finder/keyword_list 반환 {n:,}개)")
+        print(f"  파일럿 keyword_list  30 + 2 × {n:,} = {pilot:,} (이미 쓴 호출이면 소진액에 포함)")
+        print(f"  cluster_finder       150 + 50 × {n:,} = {cf:,}  [가정 — {PILOT_OBS}. 본 호출 cost_detail로 확인]")
+        print(f"  ads_metrics          1 × {n:,} = {n:,}")
+        print(f"  총액 = 10 + {pilot:,} + {cf:,} + {n:,} + 10 × S = {total:,} + 10 × S")
+        if n > tight_n:
+            print(f"  ⚠️ 파일럿 노드 {n:,} > limit + 1 — 관측 상한 [가정]이 이 그래프에서는 맞지 않는다")
+        if a.cap:
+            room = a.cap - total
+            if room < 0:
+                print(f"  ✗ 상한 {a.cap:,} 초과 ({-room:,} 부족) — limit을 낮춰 파일럿을 다시 하거나 상한을 조정한다")
+                return 1
+            print(f"  상한 {a.cap:,} 안 — 2단 조회 S ≤ {room // 10:,}개까지 가능")
+        return 0
     print(f"사전 예산 (limit {a.limit:,}) — 호출 전에는 고유 키워드 수 N을 모른다")
     print(f"  총액 = 10 (STEP 1 시드 all) + 150 + 50 × N (cluster_finder) + 1 × N (ads_metrics) + 10 × S (2단 all)")
     print(f"  보수 상한  N ≤ 2 × limit = {cons_n:,} → {base + 51 * cons_n:,} + 10 × S")
     print(f"  관측 상한  N ≤ limit + 1 = {tight_n:,} → {base + 51 * tight_n:,} + 10 × S  "
           f"[가정 — {TIGHT_OBS}. 보장값 아님]")
+    print(f"  파일럿    cluster_finder/keyword_list(같은 파라미터 · data_type 없음) = 30 + 2 × N "
+          f"≤ {30 + 2 * cons_n:,} — N을 먼저 재면 본 호출 금액이 정확해진다 → budget --pilot-nodes N")
     print("  S = 2단 조회 대상 수(STEP 5가 고른다). 사용자에게는 두 상한을 함께 알리고 동의를 받는다.")
+    if a.cap:
+        fit = (a.cap - base) // 51 // 2
+        print(f"  상한 {a.cap:,}: 보수 상한으로 들어가는 최대 limit ≈ {fit:,} (S = 0 기준) — "
+              "이보다 큰 limit이 필요하면 파일럿으로 N을 먼저 잰다")
     return 0
 
 
@@ -158,9 +229,28 @@ def cmd_nodes(a):
         if cost != expect:
             line += "  ⚠️ 불일치 — 소진량은 cost_detail을 기준으로 적는다"
     print(line)
-    seed_nodes = {k for k in nodes if a.seed and basic(k) == basic(a.seed)} if a.seed else set()
-    if a.seed and not seed_nodes:
-        print(f"⚠️ 시드 «{a.seed}»가 그래프에 없다 — STEP 5(score)는 이 상태에서 판정하지 않는다")
+    if a.pilot:
+        pn = set(load_keyword_list(a.pilot))
+        if pn == nodes:
+            print(f"파일럿 keyword_list {len(pn):,}개 = 본 호출 고유 키워드 {n:,}개 (집합 일치)")
+        else:
+            print(f"⚠️ 파일럿 keyword_list {len(pn):,}개 ≠ 본 호출 {n:,}개 — 파일럿에만 {len(pn - nodes)}개 · "
+                  f"본 호출에만 {len(nodes - pn)}개. 파일럿 기반 예산 [가정]이 이번에는 맞지 않았다")
+    seed_nodes = set()
+    if a.seed:
+        rules = load_rules(a.rules) if a.rules else {}
+        seed_nodes, how = match_seed(a.seed, nodes, lambda k: rule_canon(k, rules))
+        if seed_nodes:
+            print(seed_match_line(a.seed, seed_nodes, how))
+        else:
+            print(f"⚠️ 시드 «{a.seed}»가 그래프에 없다 (원 표기·공백·대소문자"
+                  + ("·변형치환 규칙" if rules else "") + " 대조) — STEP 5(score)는 이 상태에서 판정하지 않는다")
+            hint = sorted(k for k in nodes if near_one(basic(k), basic(a.seed)))
+            if hint:
+                print(f"  표기변형 후보(한 글자 차이) [추정]: {', '.join(hint[:5])} — 같은 말이면 themes.json "
+                      "rules.변형치환에 쌍을 넣고 --rules themes.json으로 다시 확인한다(score는 그 규칙으로 대조한다)")
+            if not rules:
+                print("  --rules 없이 대조했다 — 변형치환 규칙이 있으면 --rules themes.json을 준다")
     if a.limit and n_raw >= a.limit:
         for ln in truncation_lines(n_raw, a.limit):
             print(ln)
@@ -173,6 +263,13 @@ def cmd_nodes(a):
     print(f"다음 keyword_info(ads_metrics) 예상: {n:,} × 1 = {n:,} (요청 수 과금 — 미반환 키워드도 과금된다)")
     print(f"→ {a.out}")
     return 0
+
+
+def load_keyword_list(path):
+    """cluster_finder/keyword_list 응답(data = 키워드 배열) 또는 키워드 배열 JSON."""
+    o = json.load(open(path, encoding="utf-8"))
+    d = o.get("data", o) if isinstance(o, dict) else o
+    return [x if isinstance(x, str) else x.get("keyword") for x in (d or [])]
 
 
 def read_universe(path, graph=()):
@@ -229,9 +326,9 @@ def cmd_score(a):
     deg = degrees(rels)
     truncated = bool(a.limit and n_raw >= a.limit)
 
-    canon_of = lambda k: (uni[k]["canonical"] if k in uni and uni[k].get("canonical") else basic(k))
-    seed_c = basic(a.seed)
-    seed_nodes = {k for k in graph if basic(k) == seed_c or canon_of(k) == canon_of(a.seed)}
+    rules = load_rules(a.rules) if a.rules else {}
+    canon_of = lambda k: (uni[k]["canonical"] if k in uni and uni[k].get("canonical") else rule_canon(k, rules))
+    seed_nodes, seed_how = match_seed(a.seed, graph, canon_of)
     if not seed_nodes:
         print(f"✗ 시드 «{a.seed}»가 그래프에 없다 — 시드 거리를 잴 수 없어 «숨은/인접» 판정을 낼 수 없다.")
         print("  cluster_finder에 넘긴 시드 문자열을 그대로 --seed에 넣었는지 확인할 것. 판정하지 않고 멈춘다.")
@@ -417,6 +514,7 @@ def cmd_score(a):
 
     print(f"군집 {len(out)}개 · 관계 {n_raw:,}행(고유 간선 {len(rels):,} · 역방향 중복 {n_rev}쌍) · "
           f"시드 노드 {len(seed_nodes)}개")
+    print(seed_match_line(a.seed, seed_nodes, seed_how))
     print(f"데이터 기준월 {ref_month}" if ref_month else
           "⚠️ 데이터 기준월 없음 — --seed-all에 STEP 1의 시드 all 응답을 넘길 것. 헤더를 비워 둔 채 리포트를 쓰지 않는다.")
     print(f"[가정] size_gate {a.size_gate:,} · brand_max {a.brand_max} · min_groups {a.min_groups}"
@@ -480,21 +578,63 @@ def cmd_score(a):
     return 0 if ref_month else 3
 
 
+def cmd_merge_all(a):
+    """시드 all + 2단 all → 키워드당 한 행. 먼저 준 파일의 행이 남는다(같은 기준월 응답이면 값이 같다)."""
+    rows, seen, dup, differ, months = [], {}, 0, [], {}
+    for path in a.inputs:
+        o = json.load(open(path, encoding="utf-8"))
+        data = o.get("data", o) if isinstance(o, dict) else o
+        ms = [m.get("month") for d in data if isinstance(d, dict)
+              for m in (d.get("monthly_volume") or []) if isinstance(m, dict) and m.get("month")]
+        months[path] = max(ms) if ms else ""
+        for d in data:
+            if not isinstance(d, dict) or not d.get("keyword"):
+                continue
+            k = d["keyword"]
+            if k in seen:
+                dup += 1
+                if (seen[k].get("monthly_volume") or []) != (d.get("monthly_volume") or []):
+                    differ.append(k)
+                continue
+            seen[k] = d; rows.append(d)
+    note = (" + ".join(a.inputs) + " 병합 · 같은 키워드는 먼저 준 파일의 행 1개만 (submarkets.py merge-all)")
+    json.dump({"data": rows, "_note": note}, open(a.out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    print(f"{len(a.inputs)}개 파일 → {len(rows)}행 (같은 키워드 중복 {dup}행 제외)")
+    refs = {m for m in months.values() if m}
+    for p, m in months.items():
+        print(f"  {p}: 기준월 {m or '(monthly_volume 없음)'}")
+    if len(refs) > 1:
+        print(f"⚠️ 파일마다 기준월이 다르다({', '.join(sorted(refs))}) — 같은 조회 시점의 응답끼리만 합친다. "
+              "trend_yoy.py는 최신 월을 기준월로 잡는다")
+    if differ:
+        print(f"⚠️ 같은 키워드인데 monthly_volume이 다른 행 {len(differ)}개: " + ", ".join(differ[:5])
+              + " — 먼저 준 파일 값을 남겼다")
+    print(f"→ {a.out}  (다음: trend_yoy.py {a.out} -o trend.csv)")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     b = sub.add_parser("budget")
     b.add_argument("--limit", type=int, required=True, help="cluster_finder 요청 limit — 관계(rels) 행 수 상한")
+    b.add_argument("--pilot-nodes", type=int,
+                   help="cluster_finder/keyword_list 파일럿(같은 파라미터·같은 limit)의 반환 키워드 수 — 주면 정확한 금액")
+    b.add_argument("--cap", type=int, help="이번 분석 예산 상한 — 넘으면 종료 코드 1(파일럿 반영 시)")
     n = sub.add_parser("nodes")
     n.add_argument("cluster"); n.add_argument("--limit", type=int, required=True,
                                               help="cluster_finder 요청 limit — 관계(rels) 행 수 상한")
     n.add_argument("--seed", help="시드 — 주면 그래프 안 시드 존재·직접 이웃 수를 함께 본다")
+    n.add_argument("--rules", help="변형치환 규칙 — themes.json(rules.변형치환)·치환 사전 파일·인라인 JSON. "
+                                   "score와 같은 canonical로 시드를 대조한다")
+    n.add_argument("--pilot", help="cluster_finder/keyword_list 파일럿 응답 — 본 호출 노드 집합과 대조한다")
     n.add_argument("-o", "--out", default="nodes.json")
     s = sub.add_parser("score")
     s.add_argument("cluster")
     s.add_argument("--universe", required=True, help="build_universe.py 산출 CSV")
     s.add_argument("--seed", required=True)
     s.add_argument("--limit", type=int, required=True)
+    s.add_argument("--rules", help="변형치환 규칙(themes.json) — universe에 없는 시드·노드도 같은 규칙으로 대조한다")
     s.add_argument("--seed-all", help="STEP 1 시드 keyword_info(all) 응답 — 데이터 기준월 원천")
     s.add_argument("--trend", help="trend_yoy.py 산출 CSV (2단 조회 후 · STEP 7). 주면 2단 대상을 다시 쓰지 않는다")
     s.add_argument("--size-gate", type=int, default=10000, help="논브랜드 볼륨 최소 (12개월 합)")
@@ -505,8 +645,12 @@ def main():
     s.add_argument("-o", "--out", default="submarkets.csv")
     s.add_argument("--keywords-out", default="submarket_keywords.csv")
     s.add_argument("--pick-out", default="stage2_keywords.json")
+    m = sub.add_parser("merge-all")
+    m.add_argument("inputs", nargs="+", help="keyword_info(all) 응답들 — 보통 seed_all.json all.json")
+    m.add_argument("-o", "--out", default="all_plus_seed.json")
     a = ap.parse_args()
-    return {"budget": cmd_budget, "nodes": cmd_nodes, "score": cmd_score}[a.cmd](a)
+    return {"budget": cmd_budget, "nodes": cmd_nodes, "score": cmd_score,
+            "merge-all": cmd_merge_all}[a.cmd](a)
 
 
 if __name__ == "__main__":

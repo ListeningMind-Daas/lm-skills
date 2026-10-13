@@ -3,6 +3,48 @@
 판 번호의 정본은 SKILL.md frontmatter `metadata.version` 이다. 새 판을 낼 때 두 곳을 같이 고친다.
 결함은 «무엇이 몇 % 틀렸다»처럼 근거 수치와 함께 적는다.
 
+## v0.4.1 (2026-10-13 · lm-skills 1.7.0)
+
+공유 스크립트 사본 갱신 — 분석 절차·산출 컬럼은 바뀌지 않았다.
+
+- 계약 v1.2 사본 — T4 기저 게이트를 묶음·그룹 순위 문장에도 적용 · T6 여러 창(연도)을 나란히 비교하는 합계는 모든 창에 값이 있는 검색어로 모집단 고정(2026-10-13 실습 리허설 실행 평가에서 나온 결함).
+- `selftest.py` — SKILL.md가 비었거나 골격 자리표시자(⬜로 표시된 미작성 칸 등)가 남아 있으면 실패한다. 이전에는 스크립트만 돌려 빈 SKILL.md에서도 «통과»를 냈다(2026-10-12 워크숍 사전 실행, lm-skill-creator 0.2.4)
+- `check_refmonth.py`·`series_dedup.py`·`trend_yoy.py`·`selftest.py` — Windows cp949 콘솔에서 `—`·`⚠` 출력 시 UnicodeEncodeError로 죽던 것을 막는다(표준 출력을 UTF-8로). 이전 판은 cp949 콘솔 모사에서 출력 중 죽었다(`trend_yoy.py --help`·`check_refmonth.py` 실행 등)
+
+## v0.4.0 (2026-09-30 · lm-skills 1.7.0)
+
+2026-09-30 카탈로그 예시 실행(dry-run만 · API 호출 0)에서 나온 결함 수정. 예시 디스패처가 스킬 밖에서
+하위 클래스로 덧붙여야 했던 두 가드를 런타임으로 올렸다.
+
+- **호출 1건 상한 `per_call_cap`** (런타임 인자 · `--per-call-cap` · 시나리오 `config`) — 런타임에 세션 예산만
+  있어서 기본 limit의 cluster 한 번(추정 `150+50×101=5,200`)·path 한 번(추정 `50+40×60=2,450`)이 예산 5,000의
+  대부분을 한 호출에 쓸 수 있었다. 예산 가드와 같은 사전 추정으로 막고, 원장 `block_reason=per_call_cap`,
+  응답에 `max_limit`(상한 안에 드는 가장 큰 limit — 1,000이면 cluster 16 · path 7)을 준다. 기본은 꺼짐(None ·
+  이전 동작 유지) · 권장 1,000 `[가정]`
+- **시장 고정 `market`** (`"kr"` 같은 값 또는 `"auto"` = 첫 전송 호출의 gl · `--market`) — 본문은 «세션당 시장
+  하나»인데 런타임은 gl=us·jp를 그대로 보냈다(예시 22단계 중 14번 gl=us를 예시 디스패처가 막았다). 다른 gl은
+  `market_lock`으로 막는다. gl 인자가 없는 도구(usage)는 보지 않는다
+- **intent_finder 단가 근거 정합** — 본문 표는 «명세 = 실측»인데 판단 파일이 `cost_unverified`라 도구 설명에
+  «명세값 · 실측 대조 전 [가정]»이 붙었다. 2026-09-30 선크림(kr) 분석 5건의 intent_finder 호출 **33건 전부**
+  `cost_detail.total_cost = 30×입력 + 2×반환`(입력 1~20 · 반환 2~1,000)이라 표시를 걷고 근거를
+  `cost_verified_note`에 적었다. keyword_list 2종은 그대로 «실측 대조 전»이다(cluster keyword_list는 같은 날 1건
+  일치 `30+2×89=208` — 1건이라 올리지 않았다)
+- **trend 절단 문구** — limit 20에 매칭 9 · 반환 7인 응답을 «보류 — limit에 닿음»으로 적었다(원인은 매칭 >
+  반환). `lm_meta.truncation_cause`(`limit` · `total` · `both`)를 더하고 문구를 «매칭 9건 중 7건만 반환 (limit
+  20 미만 …)»으로 가른다. 원장 요약의 절단 줄도 «limit에 닿음 · 또는 매칭 total > 반환»으로 고쳤다
+- **integer 인자 경계** — 명세에서 온 integer 인자의 minimum·maximum·default 18곳(도구 6종)이 `1.0`·`10000.0`
+  같은 실수로 도구 스키마에 나갔다. 명세 정규화와 스키마 생성 둘 다에서 정수로 낸다(잠금 파일은 `sync --write`
+  때 바뀐다 · 값 비교는 같아 `sync`가 변경으로 보지 않는다)
+- **모의 keyword_info가 요청 키워드를 따른다** — 합성 픽스처는 `data_type`으로만 골라져 어떤 키워드를
+  요청해도 같은 5행이 왔다. 픽스처 항목 `echo_keywords: true`면 행을 요청 이름에 맞추고(없는 이름은 남는 합성
+  행을 이름만 바꿔 채우고 `_mock_renamed_from`에 적는다) `request_detail`·`cost_detail`을 요청 수로 맞춘다.
+  번들 keyword_info 합성 픽스처 2항목에 켰다 — 번들 시나리오는 픽스처와 같은 키워드라 결과가 같다
+- `sync --check-lock` — 네트워크 없이 잠금 파일만 점검(모양 · 필수 인자 · 정수 경계 · 단가 · 판단 파일과의 짝 ·
+  0 정상 · 1 문제)
+- 시스템 규칙 6을 `per_call_cap`·`market_lock`까지 넓혔다(10줄 유지). `selftest_tools.py`에 회귀 추가 —
+  1회 상한(5,200·2,450 차단 · max_limit 16·7 · 기본 꺼짐) · 시장 고정(값 · auto · gl 없는 도구) · CLI config ·
+  trend 절단 원인 두 갈래 · 정수 경계 · 모의 키워드 · check-lock · intent 설명
+
 ## v0.3.2 (2026-09-30 · lm-skills 1.6.2)
 
 공유 스크립트 결함 수정 — 2026-09-30 선크림(KR) 예시 실행에서 보고된 것. 저장된 분석 폴더로 0크레딧 재현 후 고쳤다.

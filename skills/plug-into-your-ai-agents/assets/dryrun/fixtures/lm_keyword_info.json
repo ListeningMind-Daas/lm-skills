@@ -1244,6 +1244,7 @@
   "match": {
    "data_type": "all"
   },
+  "echo_keywords": true,
   "note": "합성 — 마지막 달 급락·결측 월·저기저 함정 포함 시계열"
  },
  {
@@ -1336,6 +1337,7 @@
   "match": {
    "data_type": "ads_metrics"
   },
+  "echo_keywords": true,
   "note": "합성 — 스크리닝 5키워드. request_detail 기준으로 결정식을 대조한다"
  }
 ]

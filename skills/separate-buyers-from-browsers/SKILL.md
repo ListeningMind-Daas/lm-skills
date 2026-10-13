@@ -19,7 +19,7 @@ description: |
   (검색 데이터에는 구매 기록이 없다).
 license: MIT
 metadata:
-  version: "1.3.1"
+  version: "1.3.2"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info; flags=share; traps=T5,T8 -->

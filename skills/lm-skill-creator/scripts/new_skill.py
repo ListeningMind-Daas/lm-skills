@@ -5,13 +5,15 @@
 그래서 골격은 사람이 아니라 이 스크립트가 만든다. 내용(잡·시드축·특화 지표)만 채우면 된다.
 
     python3 new_skill.py <스킬명> --job "한 줄 정의" \\
-        --connectors keyword_info,intent_finder [--monthly] [--expand] [--share] \\
+        --connectors keyword_info,intent_finder [--monthly] [--expand] [--share] [--report] \\
         --out ../../skills
 
 플래그는 어떤 함정 처리와 재사용 스크립트가 필요한지를 결정한다:
   --monthly  시계열을 쓴다      → T1·T2·T3·T4·T6 + check_refmonth·trend_yoy
   --expand   반복 확장을 한다    → T7 + coverage_curve
   --share    점유·기회를 논한다  → T8
+  --report   HTML 리포트를 낸다  → 렌더링 계약(report-contract.md) + 공통 렌더러(render_report.py) + 견본 입력
+  --context  우리 회사 맥락으로 돈다 → 맥락 파일(context.json · validation-table.json) 견본 + 스키마 + STEP 0 맥락 읽기
 """
 import argparse, json, os, pathlib, shutil, sys
 
@@ -26,6 +28,7 @@ SHARED = KIT / "shared"
 REUSE = {
     "monthly": ["check_refmonth.py", "trend_yoy.py"],
     "expand": ["coverage_curve.py"],
+    "report": ["render_report.py", "selftest_render.py"],
     "always": ["build_universe.py", "series_dedup.py", "selftest.py"],
 }
 TRAPS = {
@@ -43,6 +46,55 @@ def declaration(name, connectors, flags, traps):
     ids = sorted({t.split()[0] for t in traps})
     return (f"<!-- lm-skill: kind=task; connectors={','.join(connectors)}; "
             f"flags={','.join(f for f in flags if f != 'always')}; traps={','.join(ids)} -->")
+
+
+REPORT_SECTION = """
+## 리포트
+
+이 스킬의 HTML 리포트는 `references/report-contract.md`(렌더링 계약 정본 사본)를 따르고,
+`scripts/render_report.py`(공통 렌더러)로만 만든다. 스킬은 **무엇을 넣을지**를 `report.json`으로 정하고,
+뼈대 순서 · 차트 메타 · 카드 필드 · 숫자 추적 · 호출 기록은 렌더러가 검사한다.
+`assets/report.example.json`은 이 스킬의 견본이다 — 공유 견본(`report.sample.json`)을 복사해 두었으니 이 스킬의 결과 모양으로 바꾼다.
+렌더하면 `report.html` 옆에 호출 로그(`report.calls.csv`)와 비용 보고서(`report.cost.json`)가 함께 나온다.
+
+첫 화면 경계 문장(`boundary`): ⬜ 이 스킬이 관측한 것과 아직 관측하지 못한 것을 한 문장으로
+
+| 섹션(`kind`) | 이 스킬이 넣는 것 | 쓰는 지표 · 차트 |
+|---|---|---|
+| `summary` 분석 요약 | ⬜ 핵심 발견 · 반대 근거 · 가능한 결정 | ⬜ |
+| `trend` 트렌드 분석 | ⬜ 절대 규모 → 최근 변화 → 과거 방향 → 계절성 (시계열을 안 쓰면 «해당 없음») | ⬜ |
+| `structure` 관심 구조 | ⬜ 하위 묶음의 차이 (없으면 «해당 없음») | ⬜ |
+| `action` 기회와 실행 | ⬜ 실행 카드 — 가설 · 결과물 · 담당 · 내부 데이터 · 확대/수정/중단 조건 | ⬜ |
+| `appendix` 근거 부록 | ⬜ 전체 수치 · 계산 정의 · 출처 · 비용 | ⬜ |
+
+`report.json`의 `facts`(사실 목록)는 **스크립트의 저장 계산 결과**에서 만든다 — 문구의 숫자는 `{{ID}}`로만 쓴다.
+`provenance.calls`(호출 순서 · 조건 · 반환 수 · 비용 · 원본 파일)는 **수집 스크립트의 원장**에서 만든다 — 손으로 적지 않는다.
+
+호출 원장을 남기는 단계: ⬜ 어느 STEP 에서 원본 응답과 cost_detail 을 원장에 쓰는지
+
+```bash
+python3 scripts/render_report.py report.json -o report.html     # 계약 위반이면 렌더하지 않는다
+```
+"""
+
+
+CONTEXT_SECTION = """
+## 우리 맥락
+
+이 스킬은 회사마다 다른 것을 `assets/`의 맥락 파일에서 읽는다 — 스키마는 `references/context-schema.md`.
+스킬 본문에는 회사 이름 · 브랜드 · 용어를 적지 않는다. 다른 회사에 쓰려면 맥락 파일만 바꾼다.
+
+| 파일 | 상태 |
+|---|---|
+| `assets/context.json` | ⬜ 결정 · 국가 · 카테고리 경계 · 브랜드 · 용어 · 가드레일 · 요청 예시를 채울 것 |
+| `assets/validation-table.json` | ⬜ 질문 ID별 검증표(완료 기준 · 관측 사실 · 원인 가설)를 채울 것 |
+| `assets/themes.json` | ⬜ 분류 사전(브랜드 · 테마 · 표기 변형) — `themes.template.json`을 복사해 채울 것 |
+
+### STEP 0 · 맥락 읽기와 실행 기록
+
+⬜ 실행 순서 맨 앞에 넣을 것 — 맥락 파일 셋을 읽고, 요청을 검증표 질문 ID에 대응시키고,
+국가 · 카테고리 경계 밖 요청은 진행 전에 묻고, 실행 폴더 `work/<스킬>/<실행 ID>/`에 요청 기록을 남기는 절차
+"""
 
 
 def skeleton(name, job, connectors, traps, flags):
@@ -126,7 +178,7 @@ metadata:
 ## 한계
 
 ⬜ 채울 것 — 월 그레인·지연, 검색≠구매, 커넥터별 한계
-"""
+""" + (CONTEXT_SECTION if "context" in flags else "") + (REPORT_SECTION if "report" in flags else "")
 
 # 변경 이력은 SKILL.md 가 아니라 같은 폴더의 CHANGELOG.md 에 쓴다 — SKILL.md 는 에이전트가 매번 읽는 절차서라
 # 지난 판의 결함 서술이 섞이면 지금 절차로 오독된다. 판 번호는 frontmatter metadata.version 이 정본이다.
@@ -141,15 +193,38 @@ CHANGELOG = """# {name} — 변경 이력
 """
 
 
+def utf8_console():
+    """Windows cp949 콘솔에서 ⬜·✗ 를 찍다 UnicodeEncodeError 로 죽지 않게 한다."""
+    for s in (sys.stdout, sys.stderr):
+        try:
+            s.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("name")
+    utf8_console()
+    ap = argparse.ArgumentParser(
+        description="LM 태스크 스킬 골격을 만든다 — 계약 사본·재사용 스크립트·함정 의무 표·evals 를 배치한다.",
+        epilog="플래그는 함정 처리 의무와 배치할 재사용 스크립트를 정한다. 셋 다 생략하면 T5(표기변형 정규화)만 의무가 된다.\n"
+               "예: python3 new_skill.py tablet-usage-demand --job \"…\" --connectors keyword_info,intent_finder "
+               "--monthly --expand --share",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("name", help="스킬 폴더 이름(영문 소문자·하이픈). frontmatter name 이 된다")
     ap.add_argument("--job", required=True, help="한 줄 정의 (description 첫 문단이 된다)")
-    ap.add_argument("--connectors", required=True, help="쉼표 구분")
-    ap.add_argument("--monthly", action="store_true")
-    ap.add_argument("--expand", action="store_true")
-    ap.add_argument("--share", action="store_true")
-    ap.add_argument("--out", default=str(KIT / "skills"))
+    ap.add_argument("--connectors", required=True,
+                    help="쉼표 구분 — keyword_info,intent_finder,cluster_finder,path_finder,serp,trend_finder")
+    ap.add_argument("--monthly", action="store_true",
+                    help="월 시계열(monthly_volume)을 쓴다 → 함정 T1·T2·T3·T4·T6 의무 + check_refmonth.py·trend_yoy.py 배치")
+    ap.add_argument("--expand", action="store_true",
+                    help="연관어를 반복 확장한다(intent_finder·cluster_finder 라운드) → 함정 T7(절단 검사) 의무 + coverage_curve.py·themes 템플릿 배치")
+    ap.add_argument("--share", action="store_true",
+                    help="점유·기회·브랜드/논브랜드를 논한다 → 함정 T8(논브랜드 분리) 의무 + themes 템플릿 배치")
+    ap.add_argument("--report", action="store_true",
+                    help="HTML 리포트를 낸다 → 렌더링 계약 · 공통 렌더러(render_report.py) · 견본 입력 배치 + SKILL.md 리포트 섹션")
+    ap.add_argument("--context", action="store_true",
+                    help="우리 회사 맥락으로 돈다 → assets/context.json · validation-table.json 견본 + references/context-schema.md + SKILL.md 맥락 섹션")
+    ap.add_argument("--out", default=str(KIT / "skills"), help="스킬 폴더를 만들 상위 폴더 (기본: 저장소 skills/)")
     ap.add_argument("--shared", default=str(SHARED), help=argparse.SUPPRESS)
     a = ap.parse_args()
     shared = pathlib.Path(a.shared)
@@ -166,7 +241,7 @@ def main():
     for sub in ("references", "scripts", "assets", "evals"):
         (dest / sub).mkdir(parents=True)
 
-    flags = ["always"] + [f for f in ("monthly", "expand", "share") if getattr(a, f)]
+    flags = ["always"] + [f for f in ("monthly", "expand", "share", "report", "context") if getattr(a, f)]
     traps = [t for f in flags for t in TRAPS.get(f, [])]
     connectors = [c.strip() for c in a.connectors.split(",") if c.strip()]
 
@@ -193,6 +268,28 @@ def main():
         if schema.is_file():
             shutil.copyfile(schema, dest / "references" / "themes-schema.md")
             copied.append("themes-schema.md")
+    if "report" in flags:                                   # 렌더링 계약 사본 · 견본 입력
+        for src, to in ((shared / "references" / "report-contract.md", dest / "references" / "report-contract.md"),
+                        (SHARED_ASSETS / "report.sample.json", dest / "assets" / "report.sample.json"),
+                        (SHARED_ASSETS / "report.sample.json", dest / "assets" / "report.example.json")):
+            if not src.is_file():
+                shutil.rmtree(dest, ignore_errors=True)
+                sys.exit(f"공유 자산이 없다 — 생성을 중단한다: {os.path.relpath(src)}")
+            shutil.copyfile(src, to)
+            copied.append(to.name)
+    if "context" in flags:                                  # 맥락 파일 견본 · 스키마 사본 · 분류 사전 견본
+        pairs = [(SHARED_ASSETS / "context.template.json", dest / "assets" / "context.json"),
+                 (SHARED_ASSETS / "validation-table.template.json", dest / "assets" / "validation-table.json"),
+                 (shared / "references" / "context-schema.md", dest / "references" / "context-schema.md")]
+        if not (dest / "assets" / "themes.template.json").exists():
+            pairs += [(SHARED_ASSETS / "themes.template.json", dest / "assets" / "themes.template.json"),
+                      (shared / "references" / "themes-schema.md", dest / "references" / "themes-schema.md")]
+        for src, to in pairs:
+            if not src.is_file():
+                shutil.rmtree(dest, ignore_errors=True)
+                sys.exit(f"공유 자산이 없다 — 생성을 중단한다: {os.path.relpath(src)}")
+            shutil.copyfile(src, to)
+            copied.append(to.name)
     (dest / "evals" / "evals.json").write_text(json.dumps({
         "skill_name": a.name,
         "evals": [{"id": 0, "prompt": "⬜ 함정을 밟는 카테고리로 쓸 것", "expected_output": "⬜", "files": []},
@@ -204,9 +301,14 @@ def main():
     print(f"생성: {rel(dest)}")
     print(f"  계약 사본 · 재사용 스크립트 {len(copied)}종 ({', '.join(copied)})")
     print(f"  함정 의무 {len(traps)}건이 SKILL.md에 미작성(⬜)으로 박혀 있다")
-    print("\n다음: SKILL.md의 ⬜를 채우고 →")
-    print(f"  python3 scripts/selftest.py")
-    print(f"  python3 {rel(pathlib.Path(__file__).parent / 'audit_skill.py')} {rel(dest)} --contract {rel(CONTRACT)}")
+    # selftest 는 «스킬 폴더에서» 돌리는 명령이다 — 저장소 루트에서 그대로 치면 scripts/selftest.py 를 못 찾는다
+    # (2026-10-12 워크숍 사전 실행). 그래서 cd 를 먼저 안내하고, 감사 명령도 스킬 폴더 기준 경로로 적는다.
+    here = lambda p: os.path.relpath(p, dest)
+    print("\n다음: 스킬 폴더로 이동해 SKILL.md의 ⬜를 채운다")
+    print(f"  cd {rel(dest)}")
+    print("채운 뒤 (스킬 폴더에서):")
+    print("  python3 scripts/selftest.py")
+    print(f"  python3 {here(pathlib.Path(__file__).resolve().parent / 'audit_skill.py')} . --contract {here(CONTRACT)}")
 
 
 if __name__ == "__main__":

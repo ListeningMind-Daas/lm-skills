@@ -318,6 +318,17 @@ def main():
         _, code = lm_tools.sync_report(lock, pricier, pol)
         _, code_add = lm_tools.sync_report(lock, grown, pol)
         _, code_same = lm_tools.sync_report(lock, lock, pol)
+        # 잠금 파일 오프라인 점검 — 번들은 0, 깨진 잠금은 1
+        if lm_tools.check_lock(lock, pol):
+            fails.append(("check-lock", f"번들 잠금 파일에 문제: {lm_tools.check_lock(lock, pol)[:3]}"))
+        broken = json.loads(json.dumps(lock)); broken["endpoints"]["/serp"]["required"].append("nope")
+        bl = tmp / "broken_lock.json"; bl.write_text(json.dumps(broken), encoding="utf-8")
+        rc_ok, _ = run([T, "sync", "--check-lock"], tmp)
+        rc_bad, out_bad = run([T, "sync", "--check-lock", "--lock", str(bl)], tmp)
+        if rc_ok != 0 or rc_bad != 1 or "nope" not in out_bad:
+            fails.append(("check-lock", f"번들 {rc_ok} · 깨진 잠금 {rc_bad} (0·1 기대)"))
+        if "실측 대조 전" in lm_tools.REG.get("lm_intent_finder").description():
+            fails.append(("단가 근거", "intent_finder 단가가 실측과 일치하는데 «실측 대조 전»으로 적혀 있다"))
         if (code, code_add, code_same) != (3, 2, 0):
             fails.append(("sync", f"종료 코드 단가 3·추가 2·같음 0 기대 — {code}·{code_add}·{code_same}"))
         if lm_tools.Registry(pricier, pol).get("lm_serp").cost_line().find("40×") < 0:
@@ -350,6 +361,86 @@ def main():
         if o.get("error") != "http" or last["attempts"] != 4 or rt2.spent != 0:
             fails.append(("5xx", f"재시도 3회 후 오류·과금 0 기대 — attempts {last['attempts']}, spent {rt2.spent}"))
 
+        # 6.1) 호출 1건 상한(per_call_cap) — 기본 limit의 cluster 5,200 · path 2,450을 예산 가드와 같은 추정으로 막는다
+        sent = []
+        cap = type("Cap", (), {"calls": 0, "post": lambda self, t, p: (sent.append((t, p)), (200, {"data": {}}))[1]})()
+        rt = lm_tools.Runtime(cap, 10 ** 6, tmp / "l_cap.jsonl", per_call_cap=1000, sleep=lambda s: None)
+        oc = rt.dispatch("lm_cluster_finder", {"keyword": "선크림", "gl": "kr"})
+        op = rt.dispatch("lm_path_finder", {"keyword": "선크림", "gl": "kr"})
+        ok_small = rt.dispatch("lm_cluster_finder", {"keyword": "선크림", "gl": "kr", "limit": oc.get("max_limit") or 0})
+        led = [json.loads(l) for l in (tmp / "l_cap.jsonl").read_text(encoding="utf-8").splitlines()]
+        if (oc.get("error"), oc.get("estimate"), oc.get("max_limit")) != ("per_call_cap", 5200, 16) \
+                or (op.get("error"), op.get("estimate"), op.get("max_limit")) != ("per_call_cap", 2450, 7):
+            fails.append(("1회 상한", f"cluster {oc.get('error')}·{oc.get('estimate')}·{oc.get('max_limit')} "
+                                     f"path {op.get('error')}·{op.get('estimate')}·{op.get('max_limit')} — "
+                                     "per_call_cap·5200·16 / per_call_cap·2450·7 기대"))
+        if [r["block_reason"] for r in led[:2]] != ["per_call_cap", "per_call_cap"] or len(sent) != 1 \
+                or ok_small.get("error"):
+            fails.append(("1회 상한", f"원장 사유 {[r['block_reason'] for r in led]} · 전송 {len(sent)} · "
+                                     f"max_limit 재요청 {ok_small.get('error')}"))
+        rt = lm_tools.Runtime(cap, 10 ** 6, tmp / "l_nocap.jsonl", sleep=lambda s: None)
+        if rt.dispatch("lm_cluster_finder", {"keyword": "선크림", "gl": "kr"}).get("error"):
+            fails.append(("1회 상한", "기본값(None)인데 호출이 막혔다 — 이전 동작이 바뀌었다"))
+        # 6.2) 시장 고정(market_lock) — 값 고정 · auto(첫 전송 호출의 gl) · gl 없는 도구는 통과
+        sent.clear()
+        rt = lm_tools.Runtime(cap, 10 ** 6, tmp / "l_mk.jsonl", market="kr", sleep=lambda s: None)
+        o = rt.dispatch("lm_keyword_info", {"keywords": ["sunscreen"], "gl": "us", "data_type": "ads_metrics"})
+        row = json.loads((tmp / "l_mk.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        if o.get("error") != "market_lock" or sent or row["block_reason"] != "market_lock" or row["gl"] != "us":
+            fails.append(("시장 고정", f"gl=us가 막히지 않았다: {o.get('error')} · 전송 {len(sent)}"))
+        rt = lm_tools.Runtime(cap, 10 ** 6, tmp / "l_mk2.jsonl", market="auto", sleep=lambda s: None)
+        a1 = rt.dispatch("lm_keyword_info", {"keywords": ["선크림"], "gl": "kr", "data_type": "ads_metrics"})
+        a2 = rt.dispatch("lm_keyword_info", {"keywords": ["sunscreen"], "gl": "jp", "data_type": "ads_metrics"})
+        a3 = rt.dispatch("lm_usage_summary", {"from": "2026-09-01", "to": "2026-09-29"})
+        if a1.get("error") or a2.get("error") != "market_lock" or a2.get("market") != "kr" or a3.get("error"):
+            fails.append(("시장 고정", f"auto: 첫 호출 {a1.get('error')} · 다른 gl {a2.get('error')} · "
+                                     f"gl 없는 도구 {a3.get('error')}"))
+        # 6.3) CLI — 시나리오 config와 --per-call-cap·--market
+        sc = tmp / "sc_guard.json"
+        sc.write_text(json.dumps({"config": {"per_call_cap": 1000, "market": "kr"}, "steps": [
+            {"tool": "lm_cluster_finder", "args": {"keyword": "선크림", "gl": "kr"}, "expect": "blocked",
+             "expect_reason": "per_call_cap"},
+            {"tool": "lm_cluster_finder", "args": {"keyword": "선크림", "gl": "kr", "limit": 10}, "expect": "ok"},
+            {"tool": "lm_keyword_info", "args": {"keywords": ["sunscreen"], "gl": "us", "data_type": "ads_metrics"},
+             "expect": "blocked", "expect_reason": "market_lock"}]}, ensure_ascii=False), encoding="utf-8")
+        rc, out = run([T, "dry-run", "--scenario", str(sc), "--fixtures", str(DRY / "fixtures"), "--budget", "5000",
+                       "--ledger", "l_sc.jsonl", "--queried-at", "2026-09-28"], tmp)
+        rc2, out2 = run([T, "dry-run", "--scenario", str(sc), "--fixtures", str(DRY / "fixtures"), "--budget", "5000",
+                         "--ledger", "l_sc2.jsonl", "--queried-at", "2026-09-28", "--per-call-cap", "100000"], tmp)
+        if rc or "1회 상한 1,000" not in out or rc2 == 0:
+            fails.append(("가드 CLI", f"config 적용 {rc} · CLI 우선 {rc2} · {out[-200:]}"))
+
+        # 6.4) trend 절단 원인 — limit에 닿음과 매칭 total > 반환을 가른다 (관측: limit 20 · 매칭 9 · 반환 7)
+        tr = json.loads((fx_dir / "lm_trend_finder.json").read_text(encoding="utf-8"))[0]["body"]
+        o = lm_tools.Runtime(one(tr), 1000, tmp / "l_tr.jsonl", sleep=lambda s: None).dispatch(
+            "lm_trend_finder", {"keyword": "선크림", "gl": "kr", "period_days": 90, "limit": 20})
+        m = o["lm_meta"]
+        if m["truncated"] is not True or m.get("truncation_cause") != "total" or "limit에 닿음" in m["convergence"] \
+                or f"매칭 {tr['total']}건 중 {len(tr['data'])}건" not in m["convergence"]:
+            fails.append(("trend 절단", f"매칭 > 반환인데 문구가 원인을 틀리게 적었다: {m.get('convergence')}"))
+        tr2 = dict(tr, total=len(tr["data"]))
+        o = lm_tools.Runtime(one(tr2), 1000, tmp / "l_tr2.jsonl", sleep=lambda s: None).dispatch(
+            "lm_trend_finder", {"keyword": "선크림", "gl": "kr", "period_days": 90, "limit": len(tr["data"])})
+        if o["lm_meta"].get("truncation_cause") != "limit" or o["lm_meta"]["convergence"] != "보류 — limit에 닿음":
+            fails.append(("trend 절단", f"반환 = limit인데 «limit에 닿음»이 아니다: {o['lm_meta'].get('convergence')}"))
+
+        # 6.5) integer 인자의 경계·기본값은 정수로 낸다 (잠금 파일의 1.0 → 1)
+        floats = [f"{t.name}.{k}.{f}" for t in lm_tools.REG.tools.values()
+                  for k, v in t.schema["properties"].items() if v.get("type") == "integer"
+                  for f in ("minimum", "maximum", "default") if isinstance(v.get(f), float)]
+        if floats:
+            fails.append(("정수 경계", f"integer 인자에 실수 경계: {floats[:5]}"))
+        if lm_tools._param({"type": "integer", "minimum": 1.0, "maximum": 3.0})["maximum"].__class__ is not int:
+            fails.append(("정수 경계", "명세 정규화가 integer 경계를 정수로 바꾸지 않는다"))
+
+        # 6.6) 합성 keyword_info 픽스처는 요청 키워드를 따른다 (echo_keywords) · 실측 원문은 그대로
+        rt = lm_tools.Runtime(lm_tools.MockTransport(fx_dir), 1000, tmp / "l_echo.jsonl", sleep=lambda s: None)
+        o = rt.dispatch("lm_keyword_info", {"keywords": ["선크림", "선케어"], "gl": "kr", "data_type": "ads_metrics"})
+        row = json.loads((tmp / "l_echo.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+        if [r["keyword"] for r in o.get("data", [])] != ["선크림", "선케어"] or row["actual_cost"] != 2 \
+                or row["formula_match"] is not True or o["lm_meta"]["not_returned"] or o["lm_meta"]["unrequested"]:
+            fails.append(("모의 키워드", f"요청 키워드를 따르지 않았다: {[r['keyword'] for r in o.get('data', [])]} · "
+                                       f"비용 {row['actual_cost']} · 대조 {row['formula_match']}"))
         # 7) 실제 전송은 환경변수 없이는 만들어지지 않는다 · 주소가 코드에 박혀 있지 않다
         saved = {k: os.environ.pop(k, None) for k in ("LM_API_BASE", "LM_API_KEY")}
         try:

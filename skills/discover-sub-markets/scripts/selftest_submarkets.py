@@ -20,6 +20,12 @@
   - P2 역방향 중복 간선은 degree에 한 번만 · 같은 검색의 중복(dup_of)은 볼륨에 한 번만 ·
        2단 대상은 volume_avg × 3 < yoy_gate면 제외 · STEP 7은 stage2 파일을 덮어쓰지 않는다 ·
        budget은 보수·관측 상한을 둘 다 낸다
+  회귀(2026-09-30 선크림 실행 결함):
+  - nodes와 score가 같은 canonical(변형치환 규칙)로 시드를 대조한다 — 선크림 → 썬크림에서 nodes만 «없다»던 불일치
+  - budget --pilot-nodes로 keyword_list 파일럿 노드 수를 넣으면 본 호출 금액이 정확히 나오고, --cap 초과면 종료 코드 1 ·
+    nodes --pilot이 파일럿과 본 호출 노드 집합을 대조한다
+  - merge-all이 시드 all과 2단 all을 키워드당 한 행으로 합치고, 그 파일이 trend_yoy.py 입력으로 돈다
+  - SKILL.md가 | tee로 종료 코드를 잃지 않는 방법(set -o pipefail)을 안내한다
 
 합성 픽스처만 쓰므로 API 호출도 크레딧도 필요 없다.
 
@@ -140,6 +146,80 @@ def doc_columns(marker):
                 cols += [c.strip() for c in nxt.split(",") if c.strip()]
             return cols
     return None
+
+
+def regress_0930(tmp, fails):
+    """2026-09-30 선크림 실행 결함 회귀 — 시드 표기변형 대조 · 파일럿 예산 · all 병합 · 종료 코드 문서."""
+    w = lambda n, o: (tmp / n).write_text(json.dumps(o, ensure_ascii=False), encoding="utf-8")
+    # API가 시드 «선크림»을 «썬크림»으로 돌려준 그래프
+    comms = {"0": ["썬크림", "선크림 추천", "선크림 종류"], "1": ["무기자차 선크림", "유기자차 선크림", "톤업 선크림"]}
+    rels = [["썬크림", "선크림 추천"], ["썬크림", "선크림 종류"], ["선크림 추천", "무기자차 선크림"],
+            ["무기자차 선크림", "유기자차 선크림"], ["유기자차 선크림", "톤업 선크림"]]
+    nodes = sorted({k for v in comms.values() for k in v})
+    w("sun_cluster.json", {"result": "OK", "cost_detail": {"total_cost": 150 + 50 * len(nodes)},
+                           "data": {"communities": comms, "rels": rels}})
+    w("sun_pilot.json", {"cost_detail": {"total_cost": 30 + 2 * len(nodes)}, "data": nodes})
+    w("sun_pilot_bad.json", {"data": nodes[:-1]})
+    vol = {"썬크림": 200000, "선크림 추천": 120000, "선크림 종류": 40000,
+           "무기자차 선크림": 30000, "유기자차 선크림": 15000, "톤업 선크림": 12000}
+    w("sun_metrics.json", {"data": [metrics_row(k, v) for k, v in vol.items()]})
+    w("sun_seeds.json", ["선크림"])
+    w("sun_themes.json", {"rules": {"변형치환": {"썬": "선"}},
+                          "themes": [{"name": "속성", "pattern": "자차|톤업"}, {"name": "구매", "pattern": "추천|종류"}],
+                          "brands": [], "no_match": {"with_brand": "브랜드·제품명", "without_brand": "코어·일반"}})
+    sm = [f"{S}/submarkets.py"]
+
+    # 1) nodes와 score가 같은 canonical 규칙으로 시드를 대조한다
+    rc, out = run(sm + ["nodes", "sun_cluster.json", "--limit", "500", "--seed", "선크림", "-o", "sun_nodes.json"], tmp)
+    if rc or "그래프에 없다" not in out or "썬크림" not in out.split("그래프에 없다", 1)[1]:
+        fails.append(("nodes (0930)", "규칙 없이 표기변형 시드를 대조하면 경고와 함께 한 글자 차이 후보(썬크림)를 알려야 한다", out[-300:]))
+    rc, out_n = run(sm + ["nodes", "sun_cluster.json", "--limit", "500", "--seed", "선크림",
+                          "--rules", "sun_themes.json", "--pilot", "sun_pilot.json", "-o", "sun_nodes.json"], tmp)
+    if rc or "그래프에 없다" in out_n or "변형치환 규칙" not in out_n:
+        fails.append(("nodes (0930)", "--rules로 시드가 변형치환 규칙(썬→선)에 걸리는데도 «그래프에 없다»를 낸다", out_n[-300:]))
+    if "집합 일치" not in out_n:
+        fails.append(("nodes (0930)", "파일럿 keyword_list와 본 호출 노드 집합 대조가 없다", out_n[-300:]))
+    rc, out = run(sm + ["nodes", "sun_cluster.json", "--limit", "500", "--pilot", "sun_pilot_bad.json",
+                        "-o", "sun_nodes.json"], tmp)
+    if "⚠️ 파일럿" not in out:
+        fails.append(("nodes (0930)", "파일럿과 본 호출 노드가 달라도 경고가 없다", out[-300:]))
+    rc, out = run([f"{S}/build_universe.py", "--metrics", "sun_metrics.json", "--themes", "sun_themes.json",
+                   "--seeds", "sun_seeds.json", "--round", "CF=sun_nodes.json", "-o", "sun_universe.csv"], tmp)
+    rc, out_s = run(sm + ["score", "sun_cluster.json", "--universe", "sun_universe.csv", "--seed", "선크림",
+                          "--limit", "500", "--seed-all", "seed_all.json", "-o", "sun.csv",
+                          "--keywords-out", "sun_kw.csv", "--pick-out", "sun_picks.json"], tmp)
+    line = lambda o: next((ln for ln in o.splitlines() if ln.startswith("시드 «")), "")
+    if rc or not line(out_s) or line(out_s) != line(out_n):
+        fails.append(("score (0930)", "score와 nodes의 시드 대조 결과가 다르다", f"nodes: {line(out_n)} / score: {line(out_s)} rc={rc}"))
+
+    # 3) 파일럿 예산 — keyword_list 노드 수로 본 호출 금액을 정확히 (실측: limit 90 → 89 · 208 · 4,600)
+    rc, out = run(sm + ["budget", "--limit", "90", "--pilot-nodes", "89", "--cap", "5500"], tmp)
+    if rc or "208" not in out or "4,600" not in out or "4,907" not in out or "S ≤ 59" not in out:
+        fails.append(("budget (0930)", "파일럿 반영 금액(208 · 4,600 · 총 4,907 + 10 × S · S ≤ 59) 이상", out[-300:]))
+    rc, out = run(sm + ["budget", "--limit", "100", "--pilot-nodes", "101", "--cap", "5500"], tmp)
+    if rc != 1 or "초과" not in out:
+        fails.append(("budget (0930)", "파일럿 반영 금액이 상한을 넘는데 종료 코드 1이 아니다", f"rc={rc} {out[-200:]}"))
+    rc, out = run(sm + ["budget", "--limit", "90", "--cap", "5500"], tmp)
+    if rc or "keyword_list" not in out or "30 + 2 × N" not in out:
+        fails.append(("budget (0930)", "사전 예산이 keyword_list 파일럿 경로를 안내하지 않는다", out[-300:]))
+
+    # 2) 시드 all + 2단 all 병합 — 키워드당 한 행, trend_yoy 입력 1개
+    seed_rows = json.loads((tmp / "seed_all.json").read_text(encoding="utf-8"))["data"]
+    stage2 = json.loads((tmp / "all.json").read_text(encoding="utf-8"))["data"]
+    w("stage2_dup.json", {"data": stage2 + [seed_rows[0]]})     # 시드 행이 2단 응답에도 들어온 경우
+    rc, out = run(sm + ["merge-all", "seed_all.json", "stage2_dup.json", "-o", "merged.json"], tmp)
+    merged = json.loads((tmp / "merged.json").read_text(encoding="utf-8"))["data"] if not rc else []
+    kws = [d["keyword"] for d in merged]
+    if rc or len(kws) != len(set(kws)) or len(kws) != len(stage2) + 1 or "중복 1행" not in out:
+        fails.append(("merge-all (0930)", "키워드당 한 행으로 합치지 않았다", f"rc={rc} {kws} {out[-200:]}"))
+    rc, out = run([f"{S}/trend_yoy.py", "merged.json", "-o", "merged_trend.csv"], tmp)
+    if rc or "캠핑 의자" not in (tmp / "merged_trend.csv").read_text(encoding="utf-8-sig"):
+        fails.append(("merge-all (0930)", "병합본이 trend_yoy.py 입력으로 돌지 않거나 시드 행이 빠졌다", out[-300:]))
+
+    # 4) 종료 코드 — | tee는 종료 코드를 잃는다
+    doc = SKILL_MD.read_text(encoding="utf-8")
+    if "pipefail" not in doc:
+        fails.append(("SKILL.md (0930)", "score 종료 코드를 | tee로 잃지 않게 하는 안내(set -o pipefail)가 없다", ""))
 
 
 def main():
@@ -316,6 +396,8 @@ def main():
             if c2.get("trend_status") != "판정" or by.get("5", {}).get("trend_status") != "추세 미조회":
                 fails.append(("score --trend", "trend_status(판정·게이트 미달·계산 불가·추세 미조회) 구분 오류",
                               f"{c2.get('trend_status')} / {by.get('5', {}).get('trend_status')}"))
+
+        regress_0930(tmp, fails)
 
     if fails:
         print(f"실패 {len(fails)}건\n")

@@ -252,4 +252,9 @@ def main():
 
 
 if __name__ == "__main__":
+    for _s in (sys.stdout, sys.stderr):      # Windows cp949 콘솔에서 ⚠·— 출력이 UnicodeEncodeError 로 죽지 않게
+        try:
+            _s.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     main()

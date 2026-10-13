@@ -20,7 +20,7 @@ description: |
   이 스킬은 **유니버스의 넓이와 그 경계**를 답하지, 구조나 순서를 답하지 않는다.
 license: MIT
 metadata:
-  version: "1.2.1"
+  version: "1.2.2"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info,intent_finder; flags=monthly,expand,share; traps=T1,T2,T3,T4,T5,T6,T7,T8 -->

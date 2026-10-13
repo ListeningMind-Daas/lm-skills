@@ -238,6 +238,107 @@ def main():
         elif "· 절단 ·" not in out:
             fails.append(("journey_paths", "@limit 생략 시 request_detail.limit으로 절단 판정하지 못했다", out[-300:]))
 
+        # ── 회귀(2026-09-30 선크림 KR 실데이터) — v0.3.0
+        #    ① path_finder가 시드 표기를 바꿔 돌려줌(선크림 → 썬크림 20/20경로) ② 사용자 지정 시드 고정
+        #    ④ 공통 줄기(선스틱 13/40경로가 앞 3걸음 동일) ⑤ 좁힌 계획이면 보류 후보가 «없음»으로 나옴
+        sun_paths = [["썬크림", "선크림 종류", "유기자차 선크림", "무기자차 유기자차 차이"],
+                     ["썬크림", "선크림 종류", "유기자차 선크림", "혼합자차 선크림"],
+                     ["썬크림", "선크림 종류", "유기자차 선크림", "무기자차 선크림 추천"],
+                     ["썬크림", "선크림 종류", "유기자차 선크림"],
+                     ["썬크림", "선크림 종류", "유기자차 선크림", "선크림 추천"],
+                     ["어바웃미 선크림", "썬크림", "선크림 추천"]]
+        su = {k for q in sun_paths for k in q}
+        (tmp / "resp_sun.json").write_text(json.dumps({
+            "result": "OK", "request_detail": {"keyword": "선크림", "gl": "kr", "time_point": "curr", "limit": 20},
+            "cost_detail": {"total_cost": 50 + 40 * len(su)}, "data": sun_paths}, ensure_ascii=False), encoding="utf-8")
+        no_rule = '{"themes":[{"name":"탐색·추천","pattern":"추천|종류"}],"brands":[]}'
+        with_rule = '{"rules":{"변형치환":{"썬":"선"}},"themes":[{"name":"탐색·추천","pattern":"추천|종류"}],"brands":[]}'
+        rc, out = run([f"{S}/journey_paths.py", "--run", "선크림=resp_sun.json", "--stages", no_rule,
+                       "--category", "sun0", "--out-dir", "out_sun0"], tmp)
+        if rc != 3 or '{"썬": "선"}' not in out:
+            fails.append(("v0.3-1", "시드가 0경로이고 한 글자 다른 표기(썬크림)만 있는데 멈추지 않거나 규칙을 제안하지 않았다",
+                          f"rc={rc} {out[-300:]}"))
+        rc, out = run([f"{S}/journey_paths.py", "--run", "선크림=resp_sun.json", "--stages", no_rule,
+                       "--category", "sun1", "--out-dir", "out_sun1", "--allow-seed-variant"], tmp)
+        if rc or "어느 경로에도 없다" not in (tmp / "out_sun1" / "journey_summary_sun1.md").read_text(encoding="utf-8"):
+            fails.append(("v0.3-1", "--allow-seed-variant로 진행했는데 요약에 시드 미발견 경고가 없다", out[-300:]))
+        rc, out = run([f"{S}/journey_paths.py", "--run", "선크림=resp_sun.json", "--stages", with_rule,
+                       "--category", "sun", "--out-dir", "out_sun"], tmp)
+        if rc:
+            fails.append(("v0.3-1", "변형치환 규칙을 넣었는데 비정상 종료", out[-300:]))
+        else:
+            se = rows(tmp / "out_sun" / "journey_edges_sun.csv")
+            if any(e["position"] == "off_seed" for e in se) or "시드 발견 6" not in out:
+                fails.append(("v0.3-1", "썬→선 규칙을 넣었는데 시드를 찾지 못했다(off_seed 잔존)", out[-300:]))
+            # ④ 공통 줄기 — 앞 3걸음 «선크림 → 선크림종류 → 유기자차선크림»이 5경로
+            stem_e = [e for e in se if e["from_canonical"] == "선크림" and e["to_canonical"] == "선크림종류"]
+            if not stem_e or stem_e[0]["path_count"] != "5" or stem_e[0].get("stem_count") != "1":
+                fails.append(("v0.3-4", "줄기 위 인접의 stem_count가 1이 아니다(갈래 수를 세션 빈도로 오독)",
+                              json.dumps(stem_e, ensure_ascii=False)))
+            rec = [e for e in se if e["to_canonical"] == "선크림추천"]
+            if sorted(str(e.get("stem_count")) for e in rec) != ["1", "1"]:
+                fails.append(("v0.3-4", "서로 다른 줄기의 인접을 각각 세지 못했다", json.dumps(rec, ensure_ascii=False)))
+            sn = {n["canonical"]: n for n in rows(tmp / "out_sun" / "journey_nodes_sun.csv")}
+            if sn.get("선크림추천", {}).get("stems_with_keyword") != "2":
+                fails.append(("v0.3-4", "stems_with_keyword가 틀리다(선크림추천: 줄기 2)", json.dumps(sn.get("선크림추천"), ensure_ascii=False)))
+            ss = (tmp / "out_sun" / "journey_summary_sun.md").read_text(encoding="utf-8")
+            if "서로 다른 줄기 2개" not in ss or "가장 큰 줄기 5/6경로" not in ss or "갈래 수" not in ss:
+                fails.append(("v0.3-4", "요약에 공통 줄기 통계·경고가 없다", ""))
+
+        # ② 사용자 지정 시드 고정 — 볼륨 순이면 «선크림 추천», 지정하면 «선스틱»
+        (tmp / "sun_metrics.json").write_text(json.dumps({
+            "request_detail": {"keywords": ["선크림", "선크림 추천", "선스틱"]}, "cost_detail": {"total_cost": 3},
+            "data": [{"keyword": "선크림", "ads_metrics": {"volume_avg": 65186}},
+                     {"keyword": "선크림 추천", "ads_metrics": {"volume_avg": 39550}},
+                     {"keyword": "선스틱", "ads_metrics": {"volume_avg": 27550}}]}, ensure_ascii=False), encoding="utf-8")
+        (tmp / "sun_pilot.json").write_text(json.dumps({
+            "request_detail": {"keyword": "선크림", "gl": "kr", "limit": 5}, "cost_detail": {"total_cost": 170},
+            "data": [["썬크림", "선크림 추천"], ["썬크림", "선크림 종류"]]}, ensure_ascii=False), encoding="utf-8")
+        # 소진 3+170=173 · r=1.5 · limit 10 → 계획 50+40×15=650 · 예산 900이면 1건만
+        base = [f"{S}/path_budget.py", "--metrics", "sun_metrics.json", "--limit", "10", "--pilot", "sun_pilot.json"]
+        plans = {}
+        for name, extra in (("vol", ["--budget", "900"]),
+                            ("pin", ["--budget", "900", "--seeds", "선크림,선스틱"]),
+                            ("only", ["--budget", "900", "--seeds", "선크림,선스틱", "--seeds-only"]),
+                            ("tight", ["--budget", "500", "--seeds", "선스틱,없는시드"]),
+                            ("recall", ["--budget", "1500", "--seeds", "선크림,선스틱", "--seeds-only", "--recall-pilot"])):
+            rc, out = run(base + extra + ["-o", f"plan_{name}.csv"], tmp)
+            plans[name] = ({r["keyword"]: r for r in rows(tmp / f"plan_{name}.csv")} if not rc else {}, out)
+        g = lambda n, k, f="decision": plans[n][0].get(k, {}).get(f)
+        if g("vol", "선크림 추천") != "call" or g("vol", "선스틱") != "hold_budget":
+            fails.append(("v0.3-2", "픽스처 전제(볼륨 순이면 선크림 추천 call)가 깨졌다", plans["vol"][1][-300:]))
+        if g("pin", "선스틱") != "call" or g("pin", "선크림 추천") != "hold_budget" or g("pin", "선크림") != "pilot_done":
+            fails.append(("v0.3-2", "--seeds로 지정한 시드(선스틱)가 볼륨 순보다 먼저 예산을 받지 못했다", plans["pin"][1][-300:]))
+        if g("only", "선크림 추천") != "hold_not_selected":
+            fails.append(("v0.3-2", "--seeds-only인데 지정 밖 후보가 hold_not_selected 행으로 남지 않았다", ""))
+        if g("tight", "선스틱") != "hold_budget" or "고정 시드" not in (g("tight", "선스틱", "note") or ""):
+            fails.append(("v0.3-2", "예산 밖 고정 시드를 이유 없이 보류했다(note에 «고정 시드» 이유 없음)", plans["tight"][1][-300:]))
+        if g("tight", "없는시드") != "hold_not_in_metrics":
+            fails.append(("v0.3-2", "출발 후보 응답에 없는 고정 시드를 hold_not_in_metrics로 남기지 않았다", ""))
+        if "limit 맞추기" not in plans["pin"][1] or '{"썬": "선"}' not in plans["pin"][1]:
+            fails.append(("v0.3-3", "파일럿 limit 맞추기 비용 또는 파일럿 시드 표기 변경 경고가 출력에 없다", plans["pin"][1][-400:]))
+        if g("recall", "선크림") != "call" or g("recall", "선크림", "limit") != "10" or g("recall", "선스틱") != "call":
+            fails.append(("v0.3-3", "--recall-pilot인데 파일럿 시드를 본 limit으로 재호출 계획하지 않았다", plans["recall"][1][-300:]))
+
+        # ⑤ 좁힌 계획 — 보류 행이 없어도 «없음»이라고 쓰지 않고, --plan-full이면 빠진 후보를 싣는다
+        #    (2026-09-30처럼 후보를 지운 metrics로 세운 계획 — 부른 시드 두 행뿐)
+        (tmp / "plan_narrow.csv").write_text(
+            "keyword,requested_keyword,volume_avg,decision,note\n"
+            "선크림,선크림,65186,pilot_done,\n선스틱,선스틱,27550,call,\n", encoding="utf-8")
+        rc, out = run([f"{S}/journey_paths.py", "--run", "선크림=resp_sun.json", "--stages", with_rule,
+                       "--category", "nar", "--out-dir", "out_nar", "--plan", "plan_narrow.csv"], tmp)
+        ns = (tmp / "out_nar" / "journey_summary_nar.md").read_text(encoding="utf-8") if not rc else ""
+        if rc or "- 없음" in ns or "빠진 후보" not in ns:
+            fails.append(("v0.3-5", "좁힌 계획에 보류 행이 없을 때 «없음»으로 적었다", out[-300:]))
+        rc, out = run([f"{S}/journey_paths.py", "--run", "선크림=resp_sun.json", "--stages", with_rule,
+                       "--category", "nar2", "--out-dir", "out_nar2", "--plan", "plan_narrow.csv",
+                       "--plan-full", "plan_vol.csv"], tmp)
+        ns = (tmp / "out_nar2" / "journey_summary_nar2.md").read_text(encoding="utf-8") if not rc else ""
+        if rc or "| 선크림 추천 |" not in ns or "excluded_from_plan (전체 계획: call)" not in ns:
+            fails.append(("v0.3-5", "--plan-full의 후보(선크림 추천)가 좁힌 계획에서 빠졌다고 요약에 실리지 않았다", out[-300:]))
+        if "| 선스틱 |" in ns:
+            fails.append(("v0.3-5", "좁힌 계획에서 부른 시드(선스틱)를 제외 후보로 실었다", ""))
+
     if fails:
         print(f"실패 {len(fails)}건\n")
         for name, why, detail in fails:
@@ -246,7 +347,7 @@ def main():
                 print(f"      {detail.strip()[:200]}")
         print("\n문서의 예시와 스크립트가 어긋나 있다. 배포 전에 고칠 것.")
         return 1
-    print("통과 — 고유 스크립트 2종(path_budget·journey_paths) 계약 검증 완료 (API 호출 없음)")
+    print("통과 — 고유 스크립트 2종(path_budget·journey_paths) 계약·v0.3.0 회귀 검증 완료 (API 호출 없음)")
     return 0
 
 

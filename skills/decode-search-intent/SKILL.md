@@ -19,7 +19,7 @@ description: |
   가중치 근거가 없는 점수라 단계 분류와 API 의도 라벨로 대신한다.
 license: MIT
 metadata:
-  version: "1.3.1"
+  version: "1.3.2"
 ---
 
 <!-- lm-skill: kind=task; connectors=intent_finder,keyword_info; flags=expand,share; traps=T5,T7,T8 -->

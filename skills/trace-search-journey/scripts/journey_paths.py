@@ -11,10 +11,17 @@ path_finder는 경로 배열만 돌려준다 — 노드·엣지·단계·세션 
      truncated로 표시하고 요약에 «반환분 기준»이라고 적는다.
   ③ 비용 오산 — 과금은 경로 수가 아니라 **경로 안 고유 키워드 수**다(50 + 40 × U).
      응답의 cost_detail.total_cost(실측)와 식으로 다시 계산한 값을 나란히 적는다.
+  ④ 시드 표기 변경 — path_finder도 시드를 다른 표기로 돌려줄 수 있다(2026-09-30 실측: `선크림` 요청 →
+     파일럿 20경로 전부 `썬크림`). 변형치환 규칙이 없으면 시드가 0경로에서 발견되고 모든 인접이
+     off_seed가 된다. 시드가 0경로인데 한 글자만 다른 표기가 사용 경로 절반 이상에 있으면 **멈추고**
+     규칙(예: {"썬": "선"})을 제안한다(`--allow-seed-variant`로만 진행). 일부 경로에만 있으면 경고한다.
+  ⑤ 공통 줄기 — 반환 경로는 앞 몇 걸음을 공유하고 끝만 갈라지는 경우가 있다(2026-09-30 실측: 선스틱
+     40경로 중 13경로가 앞 3걸음 동일). 그러면 path_count는 «세션 빈도»보다 «한 줄기 아래 갈래 수»로
+     커진다. 줄기(앞 `--stem-len` 걸음, 기본 3) 수를 stem_count·stems_with_keyword로 함께 적는다.
 
     python3 journey_paths.py --run "캠핑의자=resp_camping_chair.json@50" \\
         --stages stages.json --category camping-chair-kr --out-dir out \\
-        --queried-at 2026-09-28
+        --queried-at 2026-09-28 --plan path_plan.csv [--plan-full path_plan_all_candidates.csv]
 
 `--run`은 반복할 수 있다(시드마다 한 번). `@limit`을 생략하면 응답의 request_detail.limit을 쓰고,
 그것도 없으면 절단 판정을 «판정 불가»로 남긴다. API 호출은 하지 않는다.
@@ -31,6 +38,42 @@ def load_json_arg(v):
     if v.startswith("{") or v.startswith("["):
         return json.loads(v)
     return json.loads(pathlib.Path(v).read_text(encoding="utf-8"))
+
+
+def seed_variant_scan(seed_c, path_canons):
+    """시드와 한 글자만 다른(같은 길이 · 치환 1) canonical 표기를 찾는다.
+
+    반환: (variant_only 경로 수, {변형: 경로 수}, 제안 규칙 {변형 글자: 시드 글자}).
+    variant_only = 시드는 없고 변형만 있는 경로. 시드 3글자 미만이면 한 글자 차이가 다른 말이 되기
+    쉬워 검사하지 않는다 [가정].
+    """
+    if len(seed_c) < 3:
+        return 0, {}, {}
+    var_paths = collections.Counter()
+    only = 0
+    for cs in path_canons:
+        found = set()
+        for c in cs:
+            if c != seed_c and len(c) == len(seed_c) and sum(x != y for x, y in zip(c, seed_c)) == 1:
+                found.add(c)
+        for c in found:
+            var_paths[c] += 1
+        if found and seed_c not in cs:
+            only += 1
+    rules = {}
+    for v, _ in var_paths.most_common():
+        i = next(i for i, (x, y) in enumerate(zip(v, seed_c)) if x != y)
+        rules.setdefault(v[i], seed_c[i])
+    return only, dict(var_paths.most_common()), rules
+
+
+def stem_of(cs, k):
+    """연속 중복(표기변형 인접)을 접은 canonical 경로의 앞 k걸음."""
+    out = []
+    for c in cs:
+        if not out or out[-1] != c:
+            out.append(c)
+    return tuple(out[:k])
 
 
 def make_canon(subs):
@@ -87,6 +130,10 @@ def main():
     ap.add_argument("--queried-at", default="", help="조회일 YYYY-MM-DD (요약 헤더에 적는다)")
     ap.add_argument("--top", type=int, default=10, help="요약의 다음 검색 상위 N")
     ap.add_argument("--plan", help="path_budget.py의 path_plan.csv — 보류한 출발 후보를 요약에 싣는다")
+    ap.add_argument("--plan-full", help="후보를 좁히기 전 전체 계획 CSV — 좁힌 계획에서 빠진 후보도 요약에 싣는다")
+    ap.add_argument("--stem-len", type=int, default=3, help="공통 줄기로 볼 앞 걸음 수 [가정] (기본 3)")
+    ap.add_argument("--allow-seed-variant", action="store_true",
+                    help="시드가 0경로이고 한 글자 다른 표기만 있어도 멈추지 않고 진행 (전부 off_seed가 된다)")
     a = ap.parse_args()
 
     stages = load_json_arg(a.stages)
@@ -96,6 +143,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
 
     edge_rows, node_rows, runs = [], [], []
+    stop = []
     for spec in a.run:
         seed, path, limit_arg = parse_run(spec)
         resp = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
@@ -118,8 +166,14 @@ def main():
         node_pre, node_post = collections.Counter(), collections.Counter()
         loops = 0
         seed_found = 0
-        for p in paths:
-            cs = [canon(k) for k in p]
+        stems = collections.Counter()
+        edge_stems, node_stems = {}, {}
+        path_canons = [[canon(k) for k in p] for p in paths]
+        for p, cs in zip(paths, path_canons):
+            stem = stem_of(cs, a.stem_len)
+            stems[stem] += 1
+            for c in set(cs):
+                node_stems.setdefault(c, set()).add(stem)
             for k, c in zip(p, cs):
                 example.setdefault(c, k)
             idx = cs.index(seed_c) if seed_c in cs else None
@@ -146,6 +200,7 @@ def main():
                 else:
                     pos = "post_seed"
                 edges[(f, t)] += 1
+                edge_stems.setdefault((f, t), set()).add(stem)
                 edge_pos.setdefault((f, t), collections.Counter())[pos] += 1
 
         n_paths = len(paths)
@@ -160,6 +215,7 @@ def main():
                 "position": edge_pos[(f, t)].most_common(1)[0][0],
                 "path_count": n,
                 "edge_share": round(n / total_edges, 4) if total_edges else "",
+                "stem_count": len(edge_stems[(f, t)]),
             })
         for c, n in node_paths.most_common():
             st, facets, is_brand = classify(c)
@@ -169,7 +225,11 @@ def main():
                 "paths_with_keyword": n,
                 "share_of_paths": round(n / n_paths, 4) if n_paths else "",
                 "pre_seed_paths": node_pre[c], "post_seed_paths": node_post[c],
+                "stems_with_keyword": len(node_stems.get(c, ())),
             })
+        v_only, variants, v_rules = seed_variant_scan(seed_c, path_canons)
+        if n_paths and seed_found == 0 and variants and v_only * 2 >= n_paths and not a.allow_seed_variant:
+            stop.append((seed, v_only, n_paths, variants, v_rules))
         runs.append({
             "seed": seed, "gl": gl, "time_point": time_point, "limit": limit,
             "returned": len(resp.get("data") or []), "usable": n_paths,
@@ -178,13 +238,25 @@ def main():
             "measured": measured, "formula": formula, "loops": loops,
             "edges": edges, "total_edges": total_edges, "classify": classify,
             "node_paths": node_paths, "example": example,
+            "stems": stems, "edge_stems": {e: len(v) for e, v in edge_stems.items()}, "v_only": v_only, "variants": variants, "v_rules": v_rules,
         })
+
+    if stop:
+        for seed, only, n, variants, rules in stop:
+            vs = ", ".join(f"«{v}» {k}경로" for v, k in variants.items())
+            rj = json.dumps(rules, ensure_ascii=False)
+            print(f"✗ 시드 «{seed}»가 사용 경로 {n}개 중 0개에서 발견됐다. 한 글자 다른 표기가 {only}경로에 있다: {vs}.\n"
+                  f"  path_finder가 시드를 다른 표기로 돌려준 것으로 보인다. 이대로 집계하면 모든 인접이 off_seed가 된다.\n"
+                  f"  단계 사전 rules.변형치환에 {rj} 를 더하고 다시 돌린다(0크레딧). "
+                  "다른 검색이 맞다면 --allow-seed-variant로 진행한다.", file=sys.stderr)
+        return 3
 
     cat = a.category
     ecols = ["seed", "from_canonical", "to_canonical", "from_example", "to_example",
-             "from_stage", "to_stage", "position", "path_count", "edge_share"]
+             "from_stage", "to_stage", "position", "path_count", "edge_share", "stem_count"]
     ncols = ["seed", "canonical", "example", "stage", "stage_facets", "is_brand",
-             "paths_with_keyword", "share_of_paths", "pre_seed_paths", "post_seed_paths"]
+             "paths_with_keyword", "share_of_paths", "pre_seed_paths", "post_seed_paths",
+             "stems_with_keyword"]
     for name, cols, rows in ((f"journey_edges_{cat}.csv", ecols, edge_rows),
                              (f"journey_nodes_{cat}.csv", ncols, node_rows)):
         with open(out / name, "w", encoding="utf-8-sig", newline="") as fh:
@@ -222,14 +294,37 @@ def main():
     if trunc:
         L.append(f"- ⚠️ 절단: {', '.join(trunc)} — 반환 경로 수가 limit에 닿았다. 아래 비중은 **반환분 기준**이며 "
                  "이 시드의 경로 전체로 일반화하지 않는다. limit을 올려도 수렴 여부는 비용을 치러야 알 수 있다.")
-    if a.plan:
-        plan = list(csv.DictReader(open(a.plan, encoding="utf-8-sig")))
+    for r in runs:
+        if r["usable"] and r["seed_found"] == 0:
+            vs = ", ".join(f"«{v}» {k}경로" for v, k in r["variants"].items())
+            L.append(f"- ⚠️ 시드 «{r['seed']}»가 어느 경로에도 없다 — 이 시드의 인접은 전부 off_seed다"
+                     + (f". 한 글자 다른 표기: {vs} · 제안 규칙 {json.dumps(r['v_rules'], ensure_ascii=False)}"
+                        if r["variants"] else "") + " [데이터 공백]")
+        elif r["v_only"]:
+            vs = ", ".join(f"«{v}» {k}경로" for v, k in r["variants"].items())
+            L.append(f"- ⚠️ 시드 «{r['seed']}»: 시드 없이 한 글자 다른 표기만 있는 경로 {r['v_only']}개({vs}) — "
+                     f"같은 검색이면 변형치환 {json.dumps(r['v_rules'], ensure_ascii=False)}를 더해 다시 집계한다 [가정]")
+    if a.plan or a.plan_full:
+        plan = list(csv.DictReader(open(a.plan, encoding="utf-8-sig"))) if a.plan else []
         held = [p for p in plan if p.get("decision", "").startswith("hold")]
+        if a.plan_full:
+            # 좁힌 계획에서 빠진 후보 — 실제로 부른 시드·좁힌 계획에 이미 있는 행은 뺀다
+            covered = {canon(s) for s, _, _ in map(parse_run, a.run)}
+            covered |= {canon(p["keyword"]) for p in plan}
+            covered |= {canon(p.get("requested_keyword") or p["keyword"]) for p in plan}
+            for p in csv.DictReader(open(a.plan_full, encoding="utf-8-sig")):
+                if canon(p["keyword"]) in covered or canon(p.get("requested_keyword") or p["keyword"]) in covered \
+                        or p.get("decision") == "hold_unrequested":      # 요청하지 않은 변형 행은 출발 후보가 아니다
+                    continue
+                held.append(dict(p, decision=f"excluded_from_plan (전체 계획: {p.get('decision', '')})",
+                                 note=("좁힌 계획에서 뺀 후보 — 부르지 않았다. " + (p.get("note") or "")).strip()))
         L.append("")
-        L.append("## 보류한 출발 후보 (path_plan.csv)")
+        L.append("## 보류한 출발 후보 (" + " · ".join(pathlib.Path(x).name for x in (a.plan, a.plan_full) if x) + ")")
         L.append("")
         if not held:
-            L.append("- 없음")
+            L.append(f"- 이 계획에는 보류 행이 없다(계획 {len(plan)}행). 후보 일부만 남긴 metrics로 계획을 세웠다면 "
+                     "빠진 후보는 여기 보이지 않는다 — 전체 계획을 `--plan-full`로 주거나 "
+                     "`path_budget.py --seeds … --seeds-only`로 한 계획에 남긴다")
         else:
             L.append("| 후보 | volume_avg | 판정 | 비고 |")
             L.append("|---|---:|---|---|")
@@ -249,6 +344,14 @@ def main():
             continue
         L.append(f"- 사용 경로 {r['usable']} · 시드가 경로 안에 있는 경로 {r['seed_found']} · "
                  f"표기변형 인접(전이에서 제외) {r['loops']}건 [실제 데이터 · 로컬 집계]")
+        (top_stem, top_n), = r["stems"].most_common(1)
+        L.append(f"- 공통 줄기(앞 {a.stem_len}걸음, 정규화 표기): 서로 다른 줄기 {len(r['stems'])}개 · "
+                 f"가장 큰 줄기 {top_n}/{r['usable']}경로 «{' → '.join(r['example'][c] for c in top_stem)}» "
+                 "[실제 데이터 · 로컬 집계]")
+        if top_n > 1:
+            L.append("- ⚠️ 경로 여러 개가 같은 줄기를 공유하고 끝만 갈라진다 — 인접 수(path_count)는 «세션 빈도»보다 "
+                     "«그 줄기 아래 갈래 수»로 커질 수 있다. 순위를 말할 때 CSV의 stem_count(그 인접이 나온 서로 다른 "
+                     "줄기 수)를 함께 본다 [추정]")
         cls = r["classify"]
         seed_c = canon(r["seed"])
         stage_paths = collections.Counter()
@@ -292,10 +395,11 @@ def main():
             if not rows:
                 L.append("- [데이터 공백] 해당 방향 인접이 없다")
                 continue
-            L.append("| 키워드 | 단계 | 인접 수 |")
-            L.append("|---|---|---:|")
+            L.append("| 키워드 | 단계 | 인접 수 | 서로 다른 줄기 |")
+            L.append("|---|---|---:|---:|")
             for k, n in sorted(rows, key=lambda x: -x[1])[: a.top]:
-                L.append(f"| {r['example'][k]} | {cls(k)[0]} | {n} |")
+                key = (seed_c, k) if title == "시드 바로 다음 검색" else (k, seed_c)
+                L.append(f"| {r['example'][k]} | {cls(k)[0]} | {n} | {r['edge_stems'][key]} |")
         L.append("")
     L.append("## 라벨")
     L.append("")
@@ -303,12 +407,16 @@ def main():
     L.append("- [추정] 단계 분류(단계 사전 규칙) · 단계 분포 · 단계 간 전이")
     L.append("- [가정] 단계 정의와 순서 · 변형치환 규칙 · limit · 볼륨 게이트")
     L.append("- [데이터 공백] 빈 응답 · 시드 미포함 경로 · 방향별 인접 없음")
+    L.append("- 공통 줄기 수·stem_count는 [실제 데이터 · 로컬 집계], 줄기 길이(앞 걸음 수)는 [가정]")
     (out / f"journey_summary_{cat}.md").write_text("\n".join(L) + "\n", encoding="utf-8")
 
     for r in runs:
         tr = "판정 불가" if r["truncated"] is None else ("절단" if r["truncated"] else "미절단")
         print(f"{r['seed']}: 경로 {r['usable']}/{r['returned']} · {tr} · 고유 {r['unique_raw']} · "
-              f"실측 {r['measured']} / 식 {r['formula']} · 표기변형 인접 {r['loops']}")
+              f"실측 {r['measured']} / 식 {r['formula']} · 표기변형 인접 {r['loops']} · "
+              f"시드 발견 {r['seed_found']} · 줄기 {len(r['stems'])}")
+        if r["usable"] and r["seed_found"] == 0:
+            print(f"⚠️ 시드 «{r['seed']}»가 0경로에서 발견됐다 — 인접이 전부 off_seed다. 요약 경고를 볼 것", file=sys.stderr)
     print(f"출력: journey_edges_{cat}.csv · journey_nodes_{cat}.csv · journey_summary_{cat}.md")
     return 0
 

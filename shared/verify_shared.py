@@ -16,7 +16,7 @@ import argparse, hashlib, pathlib, re, shutil, sys
 CONTRACT = "lm-data-contract.md"
 # 스킬 폴더는 자기완결이어야 해서(Claude Code가 폴더 밖을 안 읽는다) 공유 자산은 복사된다.
 # 복사본은 반드시 낡으므로 해시로 검사한다 — 계약뿐 아니라 스크립트·템플릿도 같다.
-SHARED_DIRS = {"scripts": "*.py", "assets": "*.json", "references": "themes-schema.md"}
+SHARED_DIRS = {"scripts": "*.py", "assets": "*.json", "references": "*.md"}
 # 사본 판정은 파일명이 아니라 «출처 표식»으로 한다. 스킬이 같은 이름의 자기 스크립트를
 # 가질 수 있기 때문이다(크리에이터의 selftest.py가 실제로 그랬다).
 MARKER = "shared-asset: lm-skills/shared"

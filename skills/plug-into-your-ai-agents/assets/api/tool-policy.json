@@ -31,7 +31,7 @@
    "annotate": "list_limit",
    "expansion": true,
    "guide": "시드 키워드의 연관 검색어를 키워드 문자열 목록으로 돌려준다(지표 없음 — 지표는 lm_keyword_info로 붙인다). 반환 수가 limit에 닿으면 lm_meta.truncated=true — 그 라운드로는 «더 없다»고 판정하지 않는다.",
-   "cost_unverified": true
+   "cost_verified_note": "명세 단가(30×입력 + 2×반환 키워드)가 실제 과금과 일치 — 2026-09-30 선크림(kr) 분석 5건의 intent_finder 호출 33건 전부 cost_detail.total_cost = 결정식(입력 1~20 · 반환 2~1,000). 저장소 커넥터 문서의 실측 단가와도 같다. 환경마다 원장 formula_match로 다시 본다"
   },
   "/cluster_finder": {
    "name": "lm_cluster_finder",

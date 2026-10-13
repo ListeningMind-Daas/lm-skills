@@ -12,15 +12,17 @@
 막고, 응답에 해석 주석(`lm_meta`)을 붙이고, 호출마다 원장(JSONL)에 한 줄을 남긴다.
 
     python3 lm_tools.py sync [--spec "$LM_API_BASE/openapi.json"] [--write]   # 명세 추적
+    python3 lm_tools.py sync --check-lock                                     # 잠금 파일만 점검(네트워크 없음)
     python3 lm_tools.py list                                                  # 도구 목록·단가
     python3 lm_tools.py schema --format claude -o tools.json [--tools lm_keyword_info,lm_intent_finder]
     python3 lm_tools.py rules
     python3 lm_tools.py dry-run --scenario S.json --fixtures DIR --budget 2000 \\
-        --ledger ledger.jsonl --raw-dir raw --queried-at 2026-09-28 [--tools-json tools.json] [--rules '{"썬":"선"}']
+        --ledger ledger.jsonl --raw-dir raw --queried-at 2026-09-28 [--tools-json tools.json] [--rules '{"썬":"선"}'] \\
+        [--per-call-cap 1000] [--market kr|auto]
     python3 lm_tools.py summary ledger.jsonl -o usage.md --period 2026-09
 
 실제 연결은 파이썬에서 `make_runtime_from_env()`로 만든다 — 주소는 `LM_API_BASE`, 키는
-`LM_API_KEY` 환경변수에서만 읽는다. `sync` 말고는 네트워크를 쓰지 않는다(API 호출 0 · 크레딧 0).
+`LM_API_KEY` 환경변수에서만 읽는다. `sync`(`--check-lock` 제외) 말고는 네트워크를 쓰지 않는다(API 호출 0 · 크레딧 0).
 `sync`는 명세 문서만 읽는다 — 데이터 엔드포인트를 부르지 않으므로 크레딧을 쓰지 않는다.
 """
 import argparse, json, math, os, pathlib, re, sys, time
@@ -65,6 +67,17 @@ def _resolve(x, comps, depth=0):
     return x
 
 
+def _int_bounds(s):
+    """integer 인자의 minimum·maximum·default가 명세에서 1.0처럼 실수로 오면 정수로 바꾼다
+    (도구 스키마를 엄격히 검사하는 호스트가 integer에 실수 경계를 거부할 수 있다)."""
+    if s.get("type") == "integer":
+        for k in ("minimum", "maximum", "default"):
+            v = s.get(k)
+            if isinstance(v, float) and v.is_integer():
+                s[k] = int(v)
+    return s
+
+
 def _param(s):
     """파라미터 스키마를 도구용으로 줄인다 — anyOf[X, null]은 X로, title·예시는 버린다."""
     s = dict(s)
@@ -82,7 +95,7 @@ def _param(s):
     desc = " ".join(str(s.get("description") or s.get("title") or "").split())
     if desc:
         out["description"] = desc
-    return out
+    return _int_bounds(out)
 
 
 def _camel(v):
@@ -191,7 +204,7 @@ class Tool:
         for k, v in ep["params"].items():
             if k in hidden:
                 continue
-            v = dict(v)
+            v = _int_bounds(dict(v))                 # 이전 잠금 파일의 1.0 경계도 정수로 낸다
             if k in pol.get("enum_only", {}):
                 v["enum"] = [e for e in v.get("enum", pol["enum_only"][k]) if e in pol["enum_only"][k]]
                 if v.get("default") not in v["enum"]:
@@ -308,7 +321,7 @@ SYSTEM_RULES = """\
 3. volume_trend_do_not_use는 판정에 쓰지 않는다. 추세는 yoy_ex_last_month, 기저 게이트 미달(below_base_gate)은 랭킹에서 뺀다.
 4. canonical이 같은 키워드는 표기변형이다. dup_of가 있는 행은 같은 검색의 중복이라 한 번만 센다. 집계는 lm_meta.variant_groups 기준으로 하되, 그룹 볼륨은 volume_lo(하한·최댓값)와 volume_hi(상한·중복 제외 합)를 병기한다 [추정]. 한쪽만 고르거나 행을 그냥 합산하지 않는다. 순위·판정은 volume_lo 기준, volume_hi로 뒤집히면 그 사실을 적는다.
 5. lm_meta.truncated가 true이거나 null(판정 불가)이면 «더 없다»고 말하지 않는다. limit을 올리거나 수렴 판정을 보류한다.
-6. 도구가 budget_guard로 막히면 남은 예산(remaining)을 사용자에게 알리고 범위를 줄인다. 우회하지 않는다.
+6. 도구가 budget_guard·per_call_cap으로 막히면 남은 예산(remaining)·줄일 limit(max_limit)을 사용자에게 알리고 범위를 줄인다. market_lock이면 이 세션에서 다른 시장을 조회하지 않는다. 우회하지 않는다.
 7. 검색량 단위는 «건»이다(사람 수 아님). 검색은 관심 신호이지 구매가 아니다.
 8. SERP는 저장된 스냅샷이다 — lm_meta.collected_at(수집 시각)을 적고 «지금 순위»라고 말하지 않는다.
 9. 트렌드 이슈는 검색량이 아니다. 수요·추세 판정은 keyword_info로 하고, 검색량으로 확인되지 않은 이슈는 «이슈 신호만 · 검색량 미확인»으로 따로 적는다. 빈 결과는 «그 기간 매칭 없음»이라는 실측이다.
@@ -607,11 +620,27 @@ def annotate_keyword_info(body, data_type, queried_at, base_gate, rules=None, re
     return body
 
 
-def _meta_limit(lim, returned, truncated, **extra):
+def _meta_limit(lim, returned, truncated, convergence=None, **extra):
+    """convergence를 주면 그 문구를 쓴다 — 절단의 원인이 «limit에 닿음»이 아닐 때(trend의 total > 반환)."""
     return {"requested_limit": lim, "returned": returned, "truncated": truncated,
-            "convergence": ("보류 — limit에 닿음" if truncated else
-                            "보류 — 절단 판정 불가" if truncated is None else "limit 미만"),
+            "convergence": convergence or ("보류 — limit에 닿음" if truncated else
+                                           "보류 — 절단 판정 불가" if truncated is None else "limit 미만"),
             **extra}
+
+
+def trend_truncation(lim, returned, total):
+    """trend 절단 판정과 원인 — (절단 여부, 원인, 문구). 원인: limit(반환 = limit) · total(매칭 total > 반환) ·
+    both · None. 매칭이 반환보다 많아도 반환이 limit 미만이면 «limit에 닿음»이 아니다(관측: limit 20 · 매칭 9 · 반환 7)."""
+    at_limit = lim is not None and returned >= lim
+    more = isinstance(total, int) and total > returned
+    if at_limit and more:
+        return True, "both", f"보류 — limit에 닿음 (매칭 {total}건 중 {returned}건 반환)"
+    if at_limit:
+        return True, "limit", "보류 — limit에 닿음"
+    if more:
+        return True, "total", (f"보류 — 매칭 {total}건 중 {returned}건만 반환 (limit {lim} 미만 — "
+                               f"limit 때문이 아니다. limit을 올려도 나머지가 온다는 보장은 없다)")
+    return False, None, None
 
 
 def annotate_response(tool, body, args):
@@ -668,9 +697,10 @@ def annotate_response(tool, body, args):
     if kind == "trend":
         returned = len(d or [])
         total = body.get("total") if isinstance(body, dict) else None
-        truncated = returned >= lim or (isinstance(total, int) and total > returned)
+        truncated, cause, conv = trend_truncation(lim, returned, total)
         body["lm_meta"] = _meta_limit(
-            lim, returned, truncated, matched_total=total, period_days=args.get("period_days"),
+            lim, returned, truncated, conv, truncation_cause=cause,
+            matched_total=total, period_days=args.get("period_days"),
             empty_note="빈 결과는 오류가 아니라 «그 기간 매칭 없음» 실측 — period_days를 넓혀 한 번 더 본다" if not returned else None,
             evidence_note="이슈는 검색량이 아니다 — 수요·추세는 lm_keyword_info로 판정한다 · summary는 AI 생성 요약 [추정]")
         return body, returned, truncated
@@ -744,6 +774,8 @@ class MockTransport:
       그 횟수만 쓰고 빠진다(예: 429 한 번 뒤 정상) · 없으면 계속 쓴다
     - `match`가 없는 항목은 순서대로 소비하고 마지막 하나는 반복한다
     - 맞는 항목이 없으면 404 `no_fixture` — 픽스처를 보충하라는 뜻이다
+    - `echo_keywords: true`인 항목은 응답 행을 요청 키워드에 맞춘다(`echo_keywords()` — 합성 픽스처용).
+      없으면 본문을 그대로 돌려준다 — 실측 응답 원문(요청하지 않은 변형 행 동반)은 그대로 재생해야 한다
     """
 
     def __init__(self, fixtures_dir):
@@ -770,25 +802,80 @@ class MockTransport:
             item = plain[0]
             if len(plain) > 1:
                 q.remove(item)
-        return item.get("status", 200), json.loads(json.dumps(item.get("body", {})))
+        body = json.loads(json.dumps(item.get("body", {})))
+        if item.get("echo_keywords") and isinstance(payload.get("keywords"), list):
+            body = echo_keywords(body, payload["keywords"])
+        return item.get("status", 200), body
+
+
+def echo_keywords(body, requested):
+    """합성 keyword_info 픽스처를 요청 키워드에 맞춘다 — 모의 전송 전용.
+
+    - 요청 키워드와 같은 이름의 행은 그대로 둔다
+    - 요청했는데 행이 없으면 요청 밖의 남는 행을 하나씩 가져와 이름만 바꾼다(`_mock_renamed_from`에 원래 이름).
+      수치는 그 행의 합성값이다. 남는 행이 모자라면 복제하지 않고 비워 둔다 — 같은 시계열을 복제하면
+      «같은 검색의 중복»(T5 ①)으로 잘못 잡힌다. 빈 키워드는 lm_meta.not_returned로 드러난다
+    - 쓰지 않은 요청 밖 행은 버린다(실측 응답의 «함께 온 변형 행»은 흉내 내지 않는다 — 그건 실측 원문 픽스처로)
+    - request_detail.keywords를 요청으로 바꾸고, cost_detail은 원래 요청의 키워드당 단가로 다시 맞춘다
+    """
+    rows = body.get("data") if isinstance(body, dict) else None
+    if not isinstance(rows, list) or not rows or not all(isinstance(r, dict) for r in rows):
+        return body
+    req = list(dict.fromkeys(str(k) for k in requested))
+    have = {r.get("keyword"): r for r in rows}
+    spare = [r for r in rows if r.get("keyword") not in req]
+    out = []
+    for k in req:
+        if k in have:
+            out.append(have[k])
+        elif spare:
+            r = spare.pop(0)
+            r["_mock_renamed_from"], r["keyword"] = r.get("keyword"), k
+            out.append(r)
+    rd = body.get("request_detail") if isinstance(body.get("request_detail"), dict) else {}
+    n0 = len(rd["keywords"]) if isinstance(rd.get("keywords"), list) and rd["keywords"] else len(rows)
+    body["data"] = out
+    body["request_detail"] = {**rd, "keywords": req}
+    cd = body.get("cost_detail")
+    if isinstance(cd, dict) and isinstance(cd.get("total_cost"), (int, float)) and n0:
+        per = cd["total_cost"] / n0
+        total = per * len(req)
+        cd["total_cost"] = int(total) if float(total).is_integer() else total
+        if "input_count" in cd:
+            cd["input_count"] = len(req)
+        if "input_total_cost" in cd:
+            cd["input_total_cost"] = cd["total_cost"]
+    return body
 
 
 # ── 런타임 (예산 가드 + 원장) ─────────────────────────────────────────────
 BLOCK_REASONS = ("budget_guard", "two_stage", "halted_after_overrun", "unknown_tool", "tool_not_enabled",
-                 "invalid_args", "no_estimate")
+                 "invalid_args", "no_estimate", "per_call_cap", "market_lock")
+# 1회 상한 권장값 [가정] — 기본 limit의 cluster(추정 5,200)·path(2,450)를 막아 limit을 줄이게 한다.
+# 이 값이면 cluster는 limit ≤ 16(추정 1,000), path는 limit ≤ 7(추정 890)까지 한 번에 나간다.
+RECOMMENDED_PER_CALL_CAP = 1000
 
 
 class Runtime:
     def __init__(self, transport, budget, ledger_path, raw_dir=None, queried_at=None,
                  base_gate=3000, path_kw_mult=PATH_KW_MULT, cluster_bound="observed", tools=None,
                  variant_rules=None, strict_two_stage=True, sleep=time.sleep, max_429=5, max_5xx=3,
-                 registry=None, pass_params=None):
+                 registry=None, pass_params=None, per_call_cap=None, market=None):
         """tools = 에이전트에 준 도구 이름 목록(None이면 검토된 도구 전부). 목록 밖 도구는 dispatch가 막는다.
         검토 전(명세에서 자동 추가된) 도구는 이름을 지정해야 열린다.
         variant_rules = 표기 치환 사전(dict · 인라인 JSON · 사전 파일 · themes.json) — 예: {"썬": "선"}.
-        pass_params = 숨긴 인자 중 사람이 열기로 한 것(예: ["user_query"]) — 에이전트가 넘기면 그대로 보낸다."""
+        pass_params = 숨긴 인자 중 사람이 열기로 한 것(예: ["user_query"]) — 에이전트가 넘기면 그대로 보낸다.
+        per_call_cap = 호출 1건의 사전 추정 상한(크레딧). None이면 끈다(세션 예산만 본다). 권장
+        RECOMMENDED_PER_CALL_CAP(1,000) [가정]. 넘으면 보내지 않고 `per_call_cap`으로 막는다 — 예산 가드와 같은 추정.
+        market = 세션 시장 고정. "kr" 같은 값이면 그 gl만, "auto"면 처음 전송한 호출의 gl로 잠근다. None이면 끈다.
+        다른 gl은 보내지 않고 `market_lock`으로 막는다."""
         if cluster_bound not in CLUSTER_BOUNDS:
             raise ValueError(f"cluster_bound는 {sorted(CLUSTER_BOUNDS)} 중 하나")
+        if per_call_cap is not None and (not isinstance(per_call_cap, (int, float)) or per_call_cap < 0):
+            raise ValueError("per_call_cap은 0 이상의 숫자이거나 None")
+        self.per_call_cap = per_call_cap
+        self.market_mode = market
+        self.market = None if market in (None, "auto") else str(market)
         self.reg = registry or REG
         self.t, self.budget, self.spent = transport, budget, 0
         self.ledger = pathlib.Path(ledger_path)
@@ -801,6 +888,21 @@ class Runtime:
         self.rules = variant_rules if isinstance(variant_rules, dict) else load_rules(variant_rules)
         self.sleep, self.max_429, self.max_5xx = sleep, max_429, max_5xx
         self.screened, self.n, self.halted = set(), 0, False
+
+    def _max_limit_under(self, t, args, cap):
+        """cap 안에 드는 가장 큰 limit — 추정은 limit에 대해 단조 증가라 이분 탐색한다. 없으면 None."""
+        lim = args.get("limit")
+        if not isinstance(lim, int) or lim < 1:
+            return None
+        fits = lambda L: (lambda e: e is not None and e <= cap)(
+            estimate(t, {**args, "limit": L}, self.path_kw_mult, self.cluster_bound)[0])
+        if not fits(1):
+            return None
+        lo, hi = 1, lim
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            lo, hi = (mid, hi) if fits(mid) else (lo, mid - 1)
+        return lo
 
     def _write(self, row):
         self.ledger.parent.mkdir(parents=True, exist_ok=True)
@@ -839,11 +941,16 @@ class Runtime:
         est, basis = estimate(t, args, self.path_kw_mult, self.cluster_bound)
         row.update(n_inputs=n_inputs(t, args), requested_limit=args.get("limit"), estimate=est, estimate_basis=basis)
 
+        gl = args.get("gl") if "gl" in t.schema["properties"] else None
         reason = None
         if self.halted:
             reason = "halted_after_overrun"
+        elif self.market and gl is not None and gl != self.market:
+            reason = "market_lock"                     # 세션당 시장 하나
         elif est is None:
             reason = "no_estimate"
+        elif self.per_call_cap is not None and est > self.per_call_cap:
+            reason = "per_call_cap"                    # 호출 1건 상한 — 예산 가드와 같은 사전 추정
         elif self.spent + est > self.budget:
             reason = "budget_guard"
         elif (t.pol.get("two_stage") and args.get("data_type") == "all" and self.strict
@@ -856,7 +963,19 @@ class Runtime:
                 out["hint"] = "먼저 data_type=ads_metrics로 조회하고 게이트 통과분만 all로 다시 요청할 것"
             if reason == "no_estimate":
                 out["hint"] = basis
+            if reason == "market_lock":
+                out.update(market=self.market, gl=gl,
+                           hint=f"이 세션의 시장은 {self.market} 하나다 — 다른 시장은 새 세션·새 예산으로 연다")
+            if reason == "per_call_cap":
+                ml = self._max_limit_under(t, args, self.per_call_cap)
+                out.update(per_call_cap=self.per_call_cap, max_limit=ml,
+                           hint=(f"호출 1건 상한 {self.per_call_cap:,}을 넘는다 — "
+                                 + (f"limit을 {ml} 이하로 줄여 다시 요청" if ml else
+                                    "입력 키워드 수를 줄이거나 나눠서 요청" if t.input_field == "keywords" else
+                                    "이 도구는 이 상한 안에서 부를 수 없다 — 사용자에게 알린다")))
             return self._block(row, reason, out)
+        if self.market_mode == "auto" and self.market is None and gl is not None:
+            self.market = gl                           # 첫 전송 호출의 시장으로 잠근다
 
         status, body, n429, n5xx = None, None, 0, 0
         while True:
@@ -947,7 +1066,7 @@ def summarize(ledger_path, period, registry=None):
         f"{r['call_id']} {r['tool']} 식 {r['formula_cost']} ≠ 실제 {r['actual_cost']}" for r in mism)
         + " → 단가가 바뀌었거나 응답 구조를 잘못 셌다. `lm_tools.py sync`로 명세를 확인할 것" if mism else ""))
     L.append(f"- cost_detail 없는 성공 호출: {len(nocost)}건 [데이터 공백 — 결정식 값으로 누적함]")
-    L.append(f"- 절단(limit에 닿음): {len(trunc)}건" + (" — " + ", ".join(
+    L.append(f"- 절단(limit에 닿음 · 또는 매칭 total > 반환): {len(trunc)}건" + (" — " + ", ".join(
         f"{r['call_id']} {r['tool']} {r['returned']}/{r['requested_limit']}" for r in trunc)
         + " → 이 호출들로 «더 없다»고 판정하지 않는다" if trunc else ""))
     L.append(f"- 절단 판정 불가: {len(unk)}건" + (" — " + ", ".join(
@@ -999,6 +1118,61 @@ def sync_report(old, new, policy):
     return L, code
 
 
+def check_lock(lock, policy):
+    """잠금 파일만 점검한다(네트워크 없음) — 문제 목록. 운영 명세와 같은지는 모른다(그건 sync의 몫)."""
+    bad = []
+    if not isinstance(lock, dict) or not isinstance(lock.get("endpoints"), dict) or not lock["endpoints"]:
+        return ["endpoints가 없거나 비었다"]
+    for k in ("spec_version", "synced_at"):
+        if not lock.get(k):
+            bad.append(f"{k} 없음")
+    for path, ep in sorted(lock["endpoints"].items()):
+        if not isinstance(ep, dict):
+            bad.append(f"{path}: 항목이 객체가 아니다"); continue
+        if ep.get("method") not in ("GET", "POST"):
+            bad.append(f"{path}: method {ep.get('method')!r}")
+        params = ep.get("params")
+        if not isinstance(params, dict):
+            bad.append(f"{path}: params 없음"); continue
+        miss = [r for r in ep.get("required") or [] if r not in params]
+        if miss:
+            bad.append(f"{path}: 필수 인자 {miss}가 params에 없다")
+        for k, v in params.items():
+            if v.get("type") == "integer":
+                for f in ("minimum", "maximum", "default"):
+                    x = v.get(f)
+                    if x is not None and not (isinstance(x, int) or (isinstance(x, float) and x.is_integer())):
+                        bad.append(f"{path}: {k}.{f} {x!r}가 정수가 아니다")
+            if "enum" in v and "default" in v and v["default"] not in v["enum"]:
+                bad.append(f"{path}: {k}.default {v['default']!r}가 열거값 밖")
+        cost, by = ep.get("cost"), ep.get("cost_by")
+        if cost is not None:
+            if not isinstance(cost, dict) or not cost:
+                bad.append(f"{path}: cost 모양"); continue
+            for ck, u in cost.items():
+                if not isinstance(u, dict) or not isinstance(u.get("input"), (int, float)) \
+                        or not isinstance(u.get("output"), (int, float)):
+                    bad.append(f"{path}: 단가 {ck} input·output이 숫자가 아니다")
+            if by:
+                enum = (params.get(by) or {}).get("enum") or []
+                if by not in params:
+                    bad.append(f"{path}: cost_by {by}가 인자에 없다")
+                elif enum and set(cost) - set(enum):
+                    bad.append(f"{path}: 단가 키 {sorted(set(cost) - set(enum))}가 {by} 열거값 밖")
+            elif "*" not in cost:
+                bad.append(f"{path}: cost_by 없이 '*' 단가가 없다")
+    try:
+        reg = Registry(lock, policy)
+    except Exception as e:                              # 판단 파일과 합쳐 도구를 만들 수 없음
+        return bad + [f"도구 생성 실패: {type(e).__name__}: {e}"]
+    for p in reg.orphans:
+        bad.append(f"tool-policy.json에만 있는 경로 {p} (잠금 파일에 없음)")
+    for n, t in reg.tools.items():
+        if t.reviewed and t.cost is None and t.estimate_kind != "unpriced":
+            bad.append(f"{n}: 단가가 없는데 추정 방식이 unpriced가 아니다")
+    return bad
+
+
 # ── CLI ──────────────────────────────────────────────────────────────────
 def _names(s):
     return [t.strip() for t in s.split(",") if t.strip()] if s else None
@@ -1011,6 +1185,8 @@ def main():
     y.add_argument("--spec", help="openapi.json 경로 또는 URL (생략하면 $LM_API_BASE/openapi.json)")
     y.add_argument("--lock", default=str(LOCK_PATH)); y.add_argument("--policy", default=str(POLICY_PATH))
     y.add_argument("--write", action="store_true"); y.add_argument("--synced-at")
+    y.add_argument("--check-lock", action="store_true",
+                   help="네트워크 없이 잠금 파일만 점검(모양·필수 인자·정수 경계·단가·판단 파일과의 짝) — 0 정상 · 1 문제")
     lst = sub.add_parser("list", help="도구 목록 · 단가 · 검토 상태")
     lst.add_argument("--lock", default=str(LOCK_PATH)); lst.add_argument("--policy", default=str(POLICY_PATH))
     s = sub.add_parser("schema"); s.add_argument("--format", choices=["claude", "openai"], required=True)
@@ -1028,10 +1204,30 @@ def main():
     d.add_argument("--tools", help="켤 도구(쉼표 구분) — 에이전트에 준 도구와 같게")
     d.add_argument("--tools-json", help="에이전트에 준 도구 정의 JSON — 여기서 도구 이름을 읽는다")
     d.add_argument("--rules", help="표기 치환 사전: 인라인 JSON · 사전 파일 · themes.json (예: '{\"썬\":\"선\"}')")
+    d.add_argument("--per-call-cap", type=int,
+                   help=f"호출 1건 사전 추정 상한(크레딧) — 생략하면 시나리오 config, 없으면 끔. 권장 {RECOMMENDED_PER_CALL_CAP:,} [가정]")
+    d.add_argument("--market", help="세션 시장 고정: kr·us·jp 같은 gl 값 또는 auto(첫 전송 호출의 gl) — 생략하면 시나리오 config, 없으면 끔")
     m = sub.add_parser("summary"); m.add_argument("ledger"); m.add_argument("-o", "--out", required=True)
     m.add_argument("--period", default=date.today().strftime("%Y-%m"))
     a = ap.parse_args()
 
+    if a.cmd == "sync" and a.check_lock:
+        lock_p = pathlib.Path(a.lock)
+        if not lock_p.is_file():
+            print(f"잠금 파일 없음 — {lock_p.name}", file=sys.stderr)
+            return 1
+        try:
+            lock = json.loads(lock_p.read_text(encoding="utf-8"))
+        except ValueError as e:
+            print(f"잠금 파일 JSON 오류: {e}", file=sys.stderr)
+            return 1
+        bad = check_lock(lock, json.loads(pathlib.Path(a.policy).read_text(encoding="utf-8")))
+        print(f"잠금 파일 점검 (네트워크 없음) — 명세 {lock.get('spec_version')} · 동기화 {lock.get('synced_at')} · "
+              f"엔드포인트 {len(lock.get('endpoints') or {})}개")
+        for b in bad:
+            print(f"  ✗ {b}")
+        print("문제 없음 — 운영 명세와 같은지는 sync(네트워크)로 따로 본다" if not bad else f"문제 {len(bad)}건")
+        return 1 if bad else 0
     if a.cmd == "sync":
         src = a.spec or ((os.environ.get("LM_API_BASE") or "").rstrip("/") + "/openapi.json"
                          if os.environ.get("LM_API_BASE") else None)
@@ -1079,9 +1275,12 @@ def main():
     scen = json.loads(pathlib.Path(a.scenario).read_text(encoding="utf-8"))
     pathlib.Path(a.ledger).unlink(missing_ok=True)
     tools = tools_from_definitions(a.tools_json) if a.tools_json else _names(a.tools)
+    cfg = scen.get("config") or {}                     # 시나리오 config — CLI 인자가 우선한다
+    cap = a.per_call_cap if a.per_call_cap is not None else cfg.get("per_call_cap")
+    market = a.market or cfg.get("market")
     rt = Runtime(MockTransport(a.fixtures), a.budget, a.ledger, raw_dir=a.raw_dir, queried_at=a.queried_at,
                  base_gate=a.base_gate, path_kw_mult=a.path_kw_mult, cluster_bound=a.cluster_bound,
-                 tools=tools, variant_rules=a.rules, sleep=lambda s: None)
+                 tools=tools, variant_rules=a.rules, sleep=lambda s: None, per_call_cap=cap, market=market)
     fails = []
     for i, step in enumerate(scen["steps"]):
         out = rt.dispatch(step["tool"], step["args"])
@@ -1102,7 +1301,9 @@ def main():
     mism = [r["call_id"] for r in rows if r["formula_match"] is False]
     if mism:
         fails.append(f"결정식 불일치 {mism}")
-    print(f"\n원장 {len(rows)}행 · 소진 {rt.spent:,} / 예산 {rt.budget:,} · 전송 호출 {rt.t.calls}회 (모의) · "
+    guards = (f" · 1회 상한 {rt.per_call_cap:,}" if rt.per_call_cap is not None else "") + \
+             (f" · 시장 {rt.market or '(auto · 미확정)'}" if rt.market_mode else "")
+    print(f"\n원장 {len(rows)}행 · 소진 {rt.spent:,} / 예산 {rt.budget:,}{guards} · 전송 호출 {rt.t.calls}회 (모의) · "
           f"명세 {rt.reg.spec_version}")
     if fails:
         print("dry-run 실패:\n  " + "\n  ".join(fails))

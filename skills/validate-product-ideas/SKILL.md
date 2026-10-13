@@ -17,7 +17,7 @@ description: |
   판매량 예측도, PMF 점수도 내지 않는다.
 license: MIT
 metadata:
-  version: "1.3.1"
+  version: "1.3.2"
 ---
 
 <!-- lm-skill: kind=task; connectors=keyword_info,intent_finder; flags=monthly,expand,share; traps=T1,T2,T3,T4,T5,T6,T7,T8 -->
