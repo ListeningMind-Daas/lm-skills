@@ -69,6 +69,8 @@ python3 ~/.claude/skills/map-your-market/scripts/selftest.py
 
 그다음 에이전트에게 평소 말로 요청하면 됩니다: "선크림 시장 지도 만들어줘".
 
+우리 회사 스킬을 만들 때는 이 폴더를 에이전트로 열고 **"스킬 만들자"**라고 보냅니다. 에이전트가 "무슨 스킬을 만들까요?"부터 묻고, 결정 · 우리 브랜드 · 경쟁 브랜드만 더 물은 뒤 나머지(스킬 이름 · 브랜드가 아닌 것 · 용어 · 표현 규칙 · 요청 예시 · 내부 지표 이름)는 초안으로 써서 확인을 받고 `work/<스킬 이름>/context.json`에 저장합니다. 메모나 파일을 따로 준비할 필요는 없습니다(API 호출 · 크레딧 없음 · 규칙은 `AGENTS.md`).
+
 ## 크레딧을 쓰기 전에 알아야 할 것
 
 - **호출은 과금됩니다.** 스킬은 단계마다 예상 비용을 먼저 알리고, 예산 안에서 수집 범위를 정합니다. 단가의 정본은 [공개 API 문서](https://listeningmind-data-api.ascentlab.io/)입니다.
@@ -83,4 +85,4 @@ python3 ~/.claude/skills/map-your-market/scripts/selftest.py
 
 ## 만든 곳
 
-[ListeningMind](https://www.listeningmind.com) · Ascent Korea
+[ListeningMind](https://www.listeningmind.com) · Ascent AI
