@@ -22,7 +22,7 @@ description: |
   순서가 필요 없는 질문에 이 스킬(최고가 커넥터)을 쓰지 않는다.
 license: MIT
 metadata:
-  version: "0.1.2"
+  version: "0.1.3"
 ---
 
 <!-- lm-skill: kind=task; connectors=path_finder,keyword_info; flags=expand,share,report; traps=T5,T7,T8 -->
@@ -159,8 +159,8 @@ python3 scripts/make_leak_dict.py --template assets/leak-dict.template.json --gl
 - 별칭이 두 브랜드에 겹치거나 2글자 미만이면 종료 코드 2. 별칭이 카테고리어 · 단계어와 겹치면 경고 — 그 말이 든 논브랜드 노드가 브랜드가 된다
 - 노드 분류 순서: 시드 → 브랜드(걸린 브랜드 수로 `my_brand` / `competitor` / `brand_vs`) → 채널 → 커뮤니티 → 비교 → 일반(시드 · 카테고리어) → `unmatched`.
   별칭 대조는 공백을 지운 canonical 위에서 하고, 별칭의 **라틴 쪽 끝에서만** 경계를 본다 — 앞(뒤)이 문자열 끝 · 원래 공백 · 한글 등 비라틴이어야 한다.
-  그래서 `sk매직`은 `sk 매직 얼음정수기` · `SK 매직`에 걸리고, `lg`는 `lg전자` · `lg 정수기`에 걸리되 `algae`에는, `on`은 `running`에 걸리지 않는다.
-  한글 쪽 끝은 경계를 보지 않는다(`코웨이정수기`). STEP 4는 별칭이 글자로 들어 있는데 그 브랜드로 분류되지 않은 노드를
+  그래서 `sk매직`은 `sk 매직 얼음정수기` · `SK 매직`에 걸리고, `hp`는 `hp프린터` · `hp 노트북`에 걸리되 `ship`에는, `on`은 `running`에 걸리지 않는다.
+  한글 쪽 끝은 경계를 보지 않는다(`쿠쿠정수기`). STEP 4는 별칭이 글자로 들어 있는데 그 브랜드로 분류되지 않은 노드를
   «별칭 누락 의심» 경고로 낸다(`alias_misses` · 리포트 반대 근거) — 브랜드 검색이면 별칭을 고쳐 0크레딧으로 다시 돌린다. 규칙 분류다 — LLM 분류는 쓰지 않는다(재현되지 않는 분류로 몫을 내면 같은 데이터에서 다른 누수가 나온다)
 
 ### STEP 2 · 시드 확인 · 파일럿 · 예산 게이트
