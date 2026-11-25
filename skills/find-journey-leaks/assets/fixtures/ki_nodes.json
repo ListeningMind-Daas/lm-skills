@@ -1,0 +1,104 @@
+{
+ "request_detail": {
+  "keywords": [
+   "런닝화 순위",
+   "런닝화순위",
+   "쿠션 좋은 런닝화",
+   "쿠션좋은 런닝화",
+   "디시 런닝화",
+   "나이키 페가수스",
+   "뉴발란스 1080"
+  ],
+  "gl": "kr",
+  "data_type": "ads_metrics"
+ },
+ "cost_detail": {
+  "total_cost": 7
+ },
+ "data": [
+  {
+   "keyword": "런닝화 순위",
+   "ads_metrics": {
+    "volume_avg": 1000,
+    "volume_total": 12000,
+    "cpc": 0.5,
+    "competition_index": 70,
+    "gg_volume_total": 4000,
+    "nv_volume_total": 8000,
+    "volume_trend": 0.3
+   }
+  },
+  {
+   "keyword": "런닝화순위",
+   "ads_metrics": {
+    "volume_avg": 400,
+    "volume_total": 4800,
+    "cpc": 0.4,
+    "competition_index": 60,
+    "gg_volume_total": 1600,
+    "nv_volume_total": 3200,
+    "volume_trend": 0.3
+   }
+  },
+  {
+   "keyword": "쿠션 좋은 런닝화",
+   "ads_metrics": {
+    "volume_avg": 720,
+    "volume_total": 8640,
+    "cpc": 0.3,
+    "competition_index": 50,
+    "gg_volume_total": 2880,
+    "nv_volume_total": 5760,
+    "volume_trend": 0.3
+   }
+  },
+  {
+   "keyword": "쿠션좋은 런닝화",
+   "ads_metrics": {
+    "volume_avg": 720,
+    "volume_total": 8640,
+    "cpc": 0.3,
+    "competition_index": 50,
+    "gg_volume_total": 2880,
+    "nv_volume_total": 5760,
+    "volume_trend": 0.3
+   }
+  },
+  {
+   "keyword": "나이키 페가수스",
+   "ads_metrics": {
+    "volume_avg": 14800,
+    "volume_total": 177600,
+    "cpc": 0.9,
+    "competition_index": 95,
+    "gg_volume_total": 59200,
+    "nv_volume_total": 118400,
+    "volume_trend": 0.3
+   }
+  },
+  {
+   "keyword": "나이키 페가수스",
+   "ads_metrics": {
+    "volume_avg": 14800,
+    "volume_total": 177600,
+    "cpc": 0.9,
+    "competition_index": 95,
+    "gg_volume_total": 59200,
+    "nv_volume_total": 118400,
+    "volume_trend": 0.3
+   }
+  },
+  {
+   "keyword": "뉴발란스 1080",
+   "ads_metrics": {
+    "volume_avg": 6600,
+    "volume_total": 79200,
+    "cpc": 0.8,
+    "competition_index": 90,
+    "gg_volume_total": 26400,
+    "nv_volume_total": 52800,
+    "volume_trend": 0.3
+   }
+  }
+ ]
+}

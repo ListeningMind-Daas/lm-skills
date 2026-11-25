@@ -2,7 +2,7 @@
 """마커 매칭 — 이 스킬 고유 보조 모듈 (buyer_share.py가 쓴다).
 
 패턴은 canonical(NFKC·소문자·변형치환 후 공백 제거) 문자열에 대해 평가한다. 공백을 지우면 영어 단어 경계가
-사라져 `best`가 `bestbuy`에, `or`가 `for dyson`에, `deal`이 `ideal`에 걸린다(2026-09-28 US 실측 충돌 6건 중 4건).
+사라져 `best`가 `bestbuy`에, `or`가 `for dyson`에, `deal`이 `ideal`에 걸린다(US 실데이터 평가에서 나온 충돌 유형).
 그래서 **ASCII로만 된 대안(alternative)은 토큰 단위로** 맞춘다:
 
   - 시작이 토큰 경계(원래 공백 자리 · 문자열 처음 · 영숫자↔비영숫자 전환)여야 한다

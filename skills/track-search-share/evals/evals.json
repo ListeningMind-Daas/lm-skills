@@ -24,7 +24,7 @@
    "id": 1,
    "name": "us-generic-heavy-comparison-queries-no-variants",
    "prompt": "US stick vacuum share of search — Dyson vs Shark vs Tineco. Did Dyson lose share vs last year? Also break it down by age group.",
-   "expected_output": "gl=us 단일 확정. 변형 목록이 없으므로 브랜드명+카테고리 시드로 intent_finder 1라운드, 반환이 limit에 붙으면 variant_list_truncated=yes와 과소 가능 고지(수렴 판정 보류). 'best stick vacuum' 등 논브랜드 비중이 커서 전체 점유와 브랜드 간 점유가 크게 다름을 명시. 'dyson vs shark' 비교 검색은 균등 분배[가정]하고 분배 볼륨 보고. 전년 동기 3개월 창으로 점유 변화 판정(직전 기간 대비·volume_trend 사용 금지), 창 끝은 기준월−1, 기저 게이트 미달이면 판정 안 함. 연령별 분해는 US에서 demography가 반환되지 않는 사양이며 이 스킬 범위 밖이라고 답함. 미국 응답의 어순·동의어 변형(shark cordless stick vacuum = stick vacuum cordless shark 등 지표 완전 일치)을 같은 검색의 중복으로 걸러 분모 부풀림(실측 8.99M→5.52M)을 막는다. 일반 시드 라운드가 limit에 붙으면 그 라운드가 공급한 브랜드 버킷까지 절단 표시. 'dyson vs shark'는 --probe-terms로 수집해야 보이며 카테고리 단어가 없으면 분모 밖 비교 검색으로 따로 보고. 'dyson v8 handheld vacuum'처럼 카테고리 단어 없는 모델명 검색은 스틱 점유에 넣지 않는다. 지연은 응답에서 읽는다(관측 1개월).",
+   "expected_output": "gl=us 단일 확정. 변형 목록이 없으므로 브랜드명+카테고리 시드로 intent_finder 1라운드, 반환이 limit에 붙으면 variant_list_truncated=yes와 과소 가능 고지(수렴 판정 보류). 'best stick vacuum' 등 논브랜드 비중이 커서 전체 점유와 브랜드 간 점유가 크게 다름을 명시. 'dyson vs shark' 비교 검색은 균등 분배[가정]하고 분배 볼륨 보고. 전년 동기 3개월 창으로 점유 변화 판정(직전 기간 대비·volume_trend 사용 금지), 창 끝은 기준월−1, 기저 게이트 미달이면 판정 안 함. 연령별 분해는 US에서 demography가 반환되지 않는 사양이며 이 스킬 범위 밖이라고 답함. 미국 응답의 어순·동의어 변형(shark cordless stick vacuum = stick vacuum cordless shark 등 지표 완전 일치)을 같은 검색의 중복으로 걸러 분모 부풀림을 막는다. 일반 시드 라운드가 limit에 붙으면 그 라운드가 공급한 브랜드 버킷까지 절단 표시. 'dyson vs shark'는 --probe-terms로 수집해야 보이며 카테고리 단어가 없으면 분모 밖 비교 검색으로 따로 보고. 'dyson v8 handheld vacuum'처럼 카테고리 단어 없는 모델명 검색은 스틱 점유에 넣지 않는다. 지연은 응답에서 읽는다.",
    "traps": [
     "T3",
     "T4",

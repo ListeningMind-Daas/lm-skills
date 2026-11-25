@@ -1,0 +1,1093 @@
+{
+ "meta": {
+  "title": "커피원두 취향 언어 — 감각어 · 감정어와 취향 묶음",
+  "subtitle": "합성 픽스처 예시(assets/fixtures) — 실제 시장 값이 아니다 · 연관 검색어 · 검색결과 화면 문구 · kr",
+  "skill": "find-taste-words",
+  "version": "0.1.1"
+ },
+ "boundary": "커피원두의 연관 검색어와 상위 검색어 검색결과 화면 문구에 나타난 감각어 · 감정어의 크기와 함께 쓰임이며, 실제 맛 · 사용 경험 · 구매와 화면 밖 리뷰는 관측하지 않았다",
+ "lede_html": "검색어 그룹 {{F1}}과 화면 문장 {{F2}}에서 감각어 · 감정어 {{F4}}을 찾았고 함께 쓰인 묶음은 {{F5}}이다. 가장 큰 묶음은 «고소 · 묵직»이다.",
+ "scope": {
+  "collected_at": "2026-11-19",
+  "latest_month": "기준월 미사용 — ads_metrics 최신 12개월 합(시계열을 읽지 않는다)",
+  "gl": "kr",
+  "selection": "시드 + 감각 탐침어 → intent_finder 확장 → ads_metrics 전량 → SERP 게이트(규모 상위 + 감각어 포함 상위)",
+  "missing": "미반환 · 결측은 0으로 채우지 않았다",
+  "excluded": "같은 검색 중복 행 · 경계 밖 패턴 · 이미지 · 동영상 등 문구가 짧은 블록 · 카테고리어 자체(커피원두, 원두, 커피)",
+  "windows": {
+   "검색량": "최신 12개월 합(volume_total)",
+   "SERP 스냅샷": "2026-11-10"
+  }
+ },
+ "facts": {
+  "F1": {
+   "value": 14,
+   "unit": "개",
+   "label": "[실제 데이터]",
+   "source": "C3 · taste_summary_커피원두.json",
+   "calc": "유니버스 canonical 그룹 수 — 같은 검색 중복(dup_of) · 경계 밖 제외"
+  },
+  "F2": {
+   "value": 11,
+   "unit": "개",
+   "label": "[실제 데이터]",
+   "source": "C4–C5 · taste_summary_커피원두.json",
+   "calc": "SERP 문구를 문장으로 자르고 canonical이 같은 문장을 한 번만 센 수"
+  },
+  "F3": {
+   "value": 72.0,
+   "unit": "%",
+   "label": "[추정]",
+   "source": "taste_summary_커피원두.json",
+   "calc": "감각어·감정어가 하나 이상 든 단위 ÷ 전체 단위 (사전 매칭)"
+  },
+  "F4": {
+   "value": 10,
+   "unit": "개",
+   "label": "[추정]",
+   "source": "taste_summary_커피원두.json",
+   "calc": "사전에 걸린 대표 낱말 수(표기변형은 한 낱말)"
+  },
+  "F5": {
+   "value": 1,
+   "unit": "개",
+   "label": "[추정]",
+   "source": "taste_summary_커피원두.json",
+   "calc": "구성 낱말 2개 이상인 공기 묶음 수"
+  },
+  "F6": {
+   "value": 2,
+   "unit": "개",
+   "label": "[실제 데이터]",
+   "source": "C4–C5",
+   "calc": "SERP를 조회한 검색어 수(게이트 통과)"
+  },
+  "F7": {
+   "value": 1,
+   "unit": "건",
+   "label": "[실제 데이터]",
+   "source": "C1–C2 · taste_collection_커피원두.csv",
+   "calc": "intent_finder 호출 중 반환 수가 요청 limit에 닿은 호출"
+  },
+  "F8": {
+   "value": 194,
+   "unit": "크레딧",
+   "label": "[실제 데이터]",
+   "source": "C1–C5",
+   "calc": "호출 원장 cost_detail.total_cost 합"
+  },
+  "F15": {
+   "value": 3.1,
+   "unit": "%",
+   "label": "[추정]",
+   "source": "taste_summary_커피원두.json",
+   "calc": "단위×낱말 적중 중 매칭 뒤 같은 어절에 조사 · 어미가 아닌 글자가 이어지는 것(더 긴 낱말 속 앞부분 일치 의심)의 비중"
+  },
+  "F9": {
+   "value": 15700,
+   "unit": "건",
+   "label": "[추정]",
+   "source": "taste_tribes_커피원두.csv",
+   "calc": "T1 구성 낱말이 든 검색어 그룹 검색량 합 — 그룹 최댓값 기준(하한)"
+  },
+  "F10": {
+   "value": 15700,
+   "unit": "건",
+   "label": "[추정]",
+   "source": "taste_tribes_커피원두.csv",
+   "calc": "T1 같은 검색어 그룹의 그룹 합 기준(상한)"
+  },
+  "F11": {
+   "value": 11,
+   "unit": "개",
+   "label": "[추정]",
+   "source": "taste_tribes_커피원두.csv",
+   "calc": "T1 구성 낱말이 든 단위 수"
+  },
+  "F12": {
+   "value": 0.455,
+   "unit": "",
+   "label": "[추정]",
+   "source": "taste_tribes_커피원두.csv",
+   "calc": "T1 구성 낱말 쌍 평균 자카드"
+  },
+  "F13": {
+   "value": 4,
+   "unit": "개",
+   "label": "[추정]",
+   "source": "taste_words_커피원두.csv",
+   "calc": "«산미» 뒤·앞에 부정 표지(없는·덜한·안)가 붙은 단위 수"
+  },
+  "F14": {
+   "value": 80.0,
+   "unit": "%",
+   "label": "[추정]",
+   "source": "taste_words_커피원두.csv",
+   "calc": "«산미» 회피 단위 ÷ 출현 단위"
+  }
+ },
+ "provenance": {
+  "calls": [
+   {
+    "id": "C1",
+    "step": "확장",
+    "at": "2026-11-23 15:30",
+    "tool": "intent_finder",
+    "params": "keywords=커피원두 · gl=kr · limit=20 · volume_threshold=50",
+    "purpose": "연관 검색어 확장",
+    "returned": 20,
+    "cost": 70,
+    "raw": "intent_r1_커피원두.json",
+    "data_through": null,
+    "status": "ok"
+   },
+   {
+    "id": "C2",
+    "step": "확장",
+    "at": "2026-11-23 15:30",
+    "tool": "intent_finder",
+    "params": "keywords=커피원두 맛 · gl=kr · limit=50 · volume_threshold=10",
+    "purpose": "intent_finder",
+    "returned": 9,
+    "cost": 48,
+    "raw": "intent_r1_커피원두맛.json",
+    "data_through": null,
+    "status": "ok"
+   },
+   {
+    "id": "C3",
+    "step": "지표",
+    "at": "2026-11-23 15:30",
+    "tool": "keyword_info",
+    "params": "keywords=16개 · gl=kr · data_type=ads_metrics",
+    "purpose": "keyword_info",
+    "returned": 17,
+    "cost": 16,
+    "raw": "metrics_ads.json",
+    "data_through": null,
+    "status": "ok"
+   },
+   {
+    "id": "C4",
+    "step": "화면",
+    "at": "2026-11-23 15:30",
+    "tool": "serp",
+    "params": "keyword=커피원두 · gl=kr · num=20 · device=mobile",
+    "purpose": "serp",
+    "returned": 4,
+    "cost": 30,
+    "raw": "serp_커피원두.json",
+    "data_through": "2026-11-10",
+    "status": "ok"
+   },
+   {
+    "id": "C5",
+    "step": "화면",
+    "at": "2026-11-23 15:30",
+    "tool": "serp",
+    "params": "keyword=고소한 원두 추천 · gl=kr · num=20 · device=mobile",
+    "purpose": "serp",
+    "returned": 3,
+    "cost": 30,
+    "raw": "serp_고소한원두.json",
+    "data_through": "2026-11-10",
+    "status": "ok"
+   }
+  ],
+  "currency": "크레딧"
+ },
+ "sections": [
+  {
+   "kind": "summary",
+   "title": "커피원두는 «고소 · 묵직»의 말로 함께 검색된다",
+   "blocks": [
+    {
+     "type": "finding",
+     "id": "D1",
+     "evidence": [
+      "F9",
+      "F10",
+      "F11",
+      "F12"
+     ],
+     "observed": "가장 큰 취향 묶음 T1은 «고소 · 묵직» — 구성 낱말이 든 검색어 검색량 하한 {{F9}} ~ 상한 {{F10}} · 단위 {{F11}}",
+     "interpretation": "[추정] 이 낱말들은 같은 검색어 · 같은 화면 문장에 함께 쓰인다 — 제품 언어 · 메시지의 한 묶음 후보다",
+     "alternatives": "함께 쓰인 것은 연관이지 같은 사람의 취향이라는 뜻이 아니다 · 화면 문장은 판매자 · 매체가 쓴 문구일 수 있다",
+     "limits": "평균 자카드 {{F12}} · 사전 규칙 분류(경계 의심 적중 {{F15}}) · 검색은 구매나 실제 맛 평가가 아니다",
+     "actions": [
+      "A1"
+     ]
+    },
+    {
+     "type": "paragraph",
+     "html": "<b>반대 근거</b> — 수집 범위 판정은 <b>보류</b>다 — intent_finder 호출 중 {{F7}}이 요청 limit에 닿아 더 있을 수 있다. «산미»은 회피로 더 자주 쓰였다(회피 단위 {{F13}} · 비중 {{F14}}) — 이 말을 장점으로 쓰면 소비자 언어와 반대가 된다. 감각어가 든 단위는 전체의 {{F3}}뿐이다 — 나머지 검색은 감각이 아닌 이유로 일어난다."
+    }
+   ]
+  },
+  {
+   "kind": "structure",
+   "title": "묶음별로 보면 감각 축이 갈린다",
+   "blocks": [
+    {
+     "type": "table",
+     "caption": "취향 묶음 — 함께 쓰인 감각어·감정어",
+     "columns": [
+      {
+       "key": "tribe",
+       "label": "묶음"
+      },
+      {
+       "key": "status",
+       "label": "상태"
+      },
+      {
+       "key": "words",
+       "label": "낱말"
+      },
+      {
+       "key": "axes",
+       "label": "감각 축"
+      },
+      {
+       "key": "units",
+       "label": "단위"
+      },
+      {
+       "key": "query_volume_lo",
+       "label": "검색량 하한"
+      },
+      {
+       "key": "query_volume_hi",
+       "label": "검색량 상한"
+      },
+      {
+       "key": "serp_exposure_lo",
+       "label": "화면 노출 검색량"
+      },
+      {
+       "key": "avoid_words",
+       "label": "회피 낱말"
+      },
+      {
+       "key": "cohesion",
+       "label": "평균 자카드"
+      }
+     ],
+     "rows": [
+      {
+       "tribe": "T1",
+       "status": "묶음",
+       "words": "고소 · 묵직",
+       "axes": "맛 1 · 질감 1",
+       "units": 11,
+       "query_volume_lo": 15700,
+       "query_volume_hi": 15700,
+       "serp_exposure_lo": 102000,
+       "avoid_words": "",
+       "cohesion": 0.455
+      },
+      {
+       "tribe": "T2",
+       "status": "단독",
+       "words": "산미",
+       "axes": "맛 1",
+       "units": 5,
+       "query_volume_lo": 12300,
+       "query_volume_hi": 12300,
+       "serp_exposure_lo": 102000,
+       "avoid_words": "산미",
+       "cohesion": null
+      },
+      {
+       "tribe": "T3",
+       "status": "단독",
+       "words": "쓴맛",
+       "axes": "맛 1",
+       "units": 2,
+       "query_volume_lo": 2500,
+       "query_volume_hi": 2500,
+       "serp_exposure_lo": 12000,
+       "avoid_words": "쓴맛",
+       "cohesion": null
+      },
+      {
+       "tribe": "T4",
+       "status": "단독",
+       "words": "초콜릿",
+       "axes": "향 1",
+       "units": 3,
+       "query_volume_lo": 2000,
+       "query_volume_hi": 2000,
+       "serp_exposure_lo": 90000,
+       "avoid_words": "",
+       "cohesion": null
+      },
+      {
+       "tribe": "T5",
+       "status": "단독",
+       "words": "편안",
+       "axes": "감정 1",
+       "units": 2,
+       "query_volume_lo": 0,
+       "query_volume_hi": 0,
+       "serp_exposure_lo": 102000,
+       "avoid_words": "",
+       "cohesion": null
+      }
+     ],
+     "meta": {
+      "title": "취향 묶음",
+      "takeaway": "묶음은 같은 단위에 함께 나온 낱말이다 — 단독은 함께 쓰인 짝이 없는 낱말",
+      "period": "검색량은 최신 12개월 합 · SERP는 저장 스냅샷",
+      "unit": "검색어 그룹 검색량 건 · 단위 개",
+      "method": "평균 자카드가 임계 이상인 묶음에 합류하는 결정적 단일 통과 · 하한은 그룹 최댓값 · 상한은 그룹 합",
+      "source": "taste_tribes_커피원두.csv · C1–C5",
+      "limits": "공기는 연관이지 인과나 같은 사람이 아니다 · 사전 밖 표현은 빠진다"
+     }
+    },
+    {
+     "type": "chart",
+     "chart": "bar",
+     "meta": {
+      "title": "감각어·감정어별 검색량 하한",
+      "takeaway": "검색어에 직접 들어간 감각어의 규모 — 화면 문장에만 나온 말은 막대가 없다",
+      "period": "최신 12개월 합",
+      "unit": "건",
+      "method": "낱말이 든 검색어 canonical 그룹의 그룹 최댓값 합",
+      "source": "taste_words_커피원두.csv",
+      "limits": "표기변형이 다른 검색이면 상한까지 클 수 있다 — 표의 상한 열을 함께 본다"
+     },
+     "data": {
+      "labels": [
+       "고소",
+       "산미",
+       "부드러움",
+       "쓴맛",
+       "초콜릿",
+       "묵직",
+       "편안",
+       "단맛",
+       "여운",
+       "견과"
+      ],
+      "values": [
+       15700,
+       12300,
+       5000,
+       2500,
+       2000,
+       1500,
+       0,
+       0,
+       0,
+       0
+      ],
+      "value_unit": "건"
+     }
+    },
+    {
+     "type": "table",
+     "caption": "낱말별 크기 · 회피 · 화면 노출",
+     "columns": [
+      {
+       "key": "word",
+       "label": "낱말"
+      },
+      {
+       "key": "axis",
+       "label": "축"
+      },
+      {
+       "key": "variants",
+       "label": "표기변형"
+      },
+      {
+       "key": "query_volume_lo",
+       "label": "검색량 하한"
+      },
+      {
+       "key": "query_volume_hi",
+       "label": "검색량 상한"
+      },
+      {
+       "key": "serp_units",
+       "label": "화면 문장"
+      },
+      {
+       "key": "serp_exposure_lo",
+       "label": "화면 노출 검색량"
+      },
+      {
+       "key": "want_units",
+       "label": "선호 단위"
+      },
+      {
+       "key": "avoid_units",
+       "label": "회피 단위"
+      },
+      {
+       "key": "tribe",
+       "label": "묶음"
+      }
+     ],
+     "rows": [
+      {
+       "word": "고소",
+       "axis": "맛",
+       "variants": "고소한|고소함|고소하고",
+       "query_volume_lo": 15700,
+       "query_volume_hi": 15700,
+       "serp_units": 7,
+       "serp_exposure_lo": 102000,
+       "want_units": 11,
+       "avoid_units": 0,
+       "tribe": "T1"
+      },
+      {
+       "word": "산미",
+       "axis": "맛",
+       "variants": "산미|산미가",
+       "query_volume_lo": 12300,
+       "query_volume_hi": 12300,
+       "serp_units": 2,
+       "serp_exposure_lo": 102000,
+       "want_units": 1,
+       "avoid_units": 4,
+       "tribe": "T2"
+      },
+      {
+       "word": "부드러움",
+       "axis": "질감",
+       "variants": "부드러운",
+       "query_volume_lo": 5000,
+       "query_volume_hi": 5700,
+       "serp_units": 0,
+       "serp_exposure_lo": 0,
+       "want_units": 1,
+       "avoid_units": 0,
+       "tribe": "희소(단위<2)"
+      },
+      {
+       "word": "쓴맛",
+       "axis": "맛",
+       "variants": "쓴맛|쓴맛이",
+       "query_volume_lo": 2500,
+       "query_volume_hi": 2500,
+       "serp_units": 1,
+       "serp_exposure_lo": 12000,
+       "want_units": 1,
+       "avoid_units": 1,
+       "tribe": "T3"
+      },
+      {
+       "word": "초콜릿",
+       "axis": "향",
+       "variants": "초콜릿|다크초콜릿",
+       "query_volume_lo": 2000,
+       "query_volume_hi": 2000,
+       "serp_units": 2,
+       "serp_exposure_lo": 90000,
+       "want_units": 3,
+       "avoid_units": 0,
+       "tribe": "T4"
+      },
+      {
+       "word": "묵직",
+       "axis": "질감",
+       "variants": "묵직한|바디감|바디감이",
+       "query_volume_lo": 1500,
+       "query_volume_hi": 1500,
+       "serp_units": 4,
+       "serp_exposure_lo": 102000,
+       "want_units": 5,
+       "avoid_units": 0,
+       "tribe": "T1"
+      },
+      {
+       "word": "편안",
+       "axis": "감정",
+       "variants": "편안한|편안하게",
+       "query_volume_lo": 0,
+       "query_volume_hi": 0,
+       "serp_units": 2,
+       "serp_exposure_lo": 102000,
+       "want_units": 2,
+       "avoid_units": 0,
+       "tribe": "T5"
+      },
+      {
+       "word": "단맛",
+       "axis": "맛",
+       "variants": "달콤한",
+       "query_volume_lo": 0,
+       "query_volume_hi": 0,
+       "serp_units": 1,
+       "serp_exposure_lo": 90000,
+       "want_units": 1,
+       "avoid_units": 0,
+       "tribe": "희소(단위<2)"
+      },
+      {
+       "word": "여운",
+       "axis": "맛",
+       "variants": "여운이",
+       "query_volume_lo": 0,
+       "query_volume_hi": 0,
+       "serp_units": 1,
+       "serp_exposure_lo": 90000,
+       "want_units": 1,
+       "avoid_units": 0,
+       "tribe": "희소(단위<2)"
+      },
+      {
+       "word": "견과",
+       "axis": "향",
+       "variants": "견과",
+       "query_volume_lo": 0,
+       "query_volume_hi": 0,
+       "serp_units": 1,
+       "serp_exposure_lo": 12000,
+       "want_units": 1,
+       "avoid_units": 0,
+       "tribe": "희소(단위<2)"
+      }
+     ],
+     "meta": {
+      "title": "낱말별 크기",
+      "takeaway": "검색량과 화면 노출은 다른 무게다 — 합치지 않는다",
+      "period": "최신 12개월 합 · SERP 저장 스냅샷",
+      "unit": "건 · 개",
+      "method": "검색량은 낱말이 든 검색어 그룹 합 · 화면 노출은 낱말이 뜬 SERP 검색어들의 검색량 하한 합",
+      "source": "taste_words_커피원두.csv",
+      "limits": "화면 노출은 그 문구를 실제로 읽은 수가 아니다"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "action",
+   "title": "묶음 낱말을 문구 시험에 걸어 본다",
+   "blocks": [
+    {
+     "type": "action",
+     "id": "A1",
+     "evidence": [
+      "F9",
+      "F10",
+      "F12"
+     ],
+     "hypothesis": "[가정] «고소 · 묵직» 낱말로 쓴 제품 문구가 지금 문구보다 상세 페이지 첫 화면에서 더 오래 읽힌다",
+     "deliverable": "상세 페이지 첫 화면 · 검색 광고 문구 시안 두 벌(묶음 낱말 사용 / 현행)",
+     "owner_role": "마케터 · 상품기획자",
+     "internal_data": "상세 페이지 체류 · 클릭률 · 전환율, 리뷰 원문의 같은 낱말 빈도",
+     "criteria": {
+      "expand": "묶음 낱말 시안의 클릭률 · 전환율이 현행보다 높고 리뷰에도 같은 낱말이 나온다",
+      "revise": "차이가 없으면 둘째 묶음 낱말로 바꿔 다시 시험한다",
+      "stop": "회피 낱말이 리뷰 불만과 겹치면 그 낱말을 쓰지 않는다"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "appendix",
+   "title": "전체 낱말 · 수집 범위 · 근거 문장",
+   "blocks": [
+    {
+     "type": "paragraph",
+     "html": "단위는 검색어 그룹 {{F1}}과 SERP 문장 {{F2}}이다. SERP는 {{F6}} 검색어에서 조회했다. 이번 산출물 소진은 {{F8}}이다. 수집 범위 판정은 <b>보류</b>다 — intent_finder 호출 중 {{F7}}이 요청 limit에 닿아 더 있을 수 있다."
+    },
+    {
+     "type": "details",
+     "summary": "수집 범위 — 호출별 요청 limit 과 반환 수(절단 검사)",
+     "blocks": [
+      {
+       "type": "table",
+       "caption": "intent_finder 호출별 절단 검사",
+       "columns": [
+        {
+         "key": "round",
+         "label": "라운드"
+        },
+        {
+         "key": "file",
+         "label": "파일"
+        },
+        {
+         "key": "seeds",
+         "label": "시드"
+        },
+        {
+         "key": "limit",
+         "label": "요청 limit"
+        },
+        {
+         "key": "returned",
+         "label": "반환"
+        },
+        {
+         "key": "truncated",
+         "label": "절단"
+        }
+       ],
+       "rows": [
+        {
+         "round": "R1",
+         "file": "intent_r1_커피원두.json",
+         "seeds": "커피원두",
+         "limit": 20,
+         "returned": 20,
+         "truncated": "Y"
+        },
+        {
+         "round": "R1",
+         "file": "intent_r1_커피원두맛.json",
+         "seeds": "커피원두 맛",
+         "limit": 50,
+         "returned": 9,
+         "truncated": ""
+        }
+       ],
+       "meta": {
+        "title": "호출별 절단 검사",
+        "takeaway": "반환이 limit에 닿은 호출이 하나라도 있으면 수렴 판정을 보류한다",
+        "period": "이번 수집",
+        "unit": "개",
+        "method": "반환 수 ≥ 요청 limit 이면 절단",
+        "source": "taste_collection_커피원두.csv · C1–C2",
+        "limits": "limit을 적지 않은 호출은 절단 여부를 알 수 없다"
+       }
+      }
+     ]
+    },
+    {
+     "type": "details",
+     "summary": "전체 낱말",
+     "blocks": [
+      {
+       "type": "table",
+       "caption": "전체 낱말",
+       "columns": [
+        {
+         "key": "word",
+         "label": "word"
+        },
+        {
+         "key": "axis",
+         "label": "axis"
+        },
+        {
+         "key": "variants",
+         "label": "variants"
+        },
+        {
+         "key": "units",
+         "label": "units"
+        },
+        {
+         "key": "query_volume_lo",
+         "label": "query_volume_lo"
+        },
+        {
+         "key": "query_volume_hi",
+         "label": "query_volume_hi"
+        },
+        {
+         "key": "serp_exposure_lo",
+         "label": "serp_exposure_lo"
+        },
+        {
+         "key": "avoid_share",
+         "label": "avoid_share"
+        },
+        {
+         "key": "tribe",
+         "label": "tribe"
+        }
+       ],
+       "rows": [
+        {
+         "word": "고소",
+         "axis": "맛",
+         "variants": "고소한|고소함|고소하고",
+         "units": 11,
+         "query_volume_lo": 15700,
+         "query_volume_hi": 15700,
+         "serp_exposure_lo": 102000,
+         "avoid_share": 0,
+         "tribe": "T1"
+        },
+        {
+         "word": "산미",
+         "axis": "맛",
+         "variants": "산미|산미가",
+         "units": 5,
+         "query_volume_lo": 12300,
+         "query_volume_hi": 12300,
+         "serp_exposure_lo": 102000,
+         "avoid_share": 0.8,
+         "tribe": "T2"
+        },
+        {
+         "word": "부드러움",
+         "axis": "질감",
+         "variants": "부드러운",
+         "units": 1,
+         "query_volume_lo": 5000,
+         "query_volume_hi": 5700,
+         "serp_exposure_lo": 0,
+         "avoid_share": 0,
+         "tribe": "희소(단위<2)"
+        },
+        {
+         "word": "쓴맛",
+         "axis": "맛",
+         "variants": "쓴맛|쓴맛이",
+         "units": 2,
+         "query_volume_lo": 2500,
+         "query_volume_hi": 2500,
+         "serp_exposure_lo": 12000,
+         "avoid_share": 0.5,
+         "tribe": "T3"
+        },
+        {
+         "word": "초콜릿",
+         "axis": "향",
+         "variants": "초콜릿|다크초콜릿",
+         "units": 3,
+         "query_volume_lo": 2000,
+         "query_volume_hi": 2000,
+         "serp_exposure_lo": 90000,
+         "avoid_share": 0,
+         "tribe": "T4"
+        },
+        {
+         "word": "묵직",
+         "axis": "질감",
+         "variants": "묵직한|바디감|바디감이",
+         "units": 5,
+         "query_volume_lo": 1500,
+         "query_volume_hi": 1500,
+         "serp_exposure_lo": 102000,
+         "avoid_share": 0,
+         "tribe": "T1"
+        },
+        {
+         "word": "편안",
+         "axis": "감정",
+         "variants": "편안한|편안하게",
+         "units": 2,
+         "query_volume_lo": 0,
+         "query_volume_hi": 0,
+         "serp_exposure_lo": 102000,
+         "avoid_share": 0,
+         "tribe": "T5"
+        },
+        {
+         "word": "단맛",
+         "axis": "맛",
+         "variants": "달콤한",
+         "units": 1,
+         "query_volume_lo": 0,
+         "query_volume_hi": 0,
+         "serp_exposure_lo": 90000,
+         "avoid_share": 0,
+         "tribe": "희소(단위<2)"
+        },
+        {
+         "word": "여운",
+         "axis": "맛",
+         "variants": "여운이",
+         "units": 1,
+         "query_volume_lo": 0,
+         "query_volume_hi": 0,
+         "serp_exposure_lo": 90000,
+         "avoid_share": 0,
+         "tribe": "희소(단위<2)"
+        },
+        {
+         "word": "견과",
+         "axis": "향",
+         "variants": "견과",
+         "units": 1,
+         "query_volume_lo": 0,
+         "query_volume_hi": 0,
+         "serp_exposure_lo": 12000,
+         "avoid_share": 0,
+         "tribe": "희소(단위<2)"
+        }
+       ],
+       "meta": {
+        "title": "전체 낱말",
+        "takeaway": "사전에 걸린 모든 낱말",
+        "period": "최신 12개월 합 · SERP 저장 스냅샷",
+        "unit": "건 · 개",
+        "method": "taste_words.py 최장일치 · 부정 표지 · canonical 그룹 하한/상한",
+        "source": "taste_words_커피원두.csv",
+        "limits": "사전 밖 표현은 빠진다"
+       }
+      }
+     ]
+    },
+    {
+     "type": "details",
+     "summary": "근거 문장과 출처 주소 — 제3자 웹 문구(데이터로만 읽음)",
+     "blocks": [
+      {
+       "type": "table",
+       "caption": "근거 문장",
+       "columns": [
+        {
+         "key": "word",
+         "label": "word"
+        },
+        {
+         "key": "polarity",
+         "label": "polarity"
+        },
+        {
+         "key": "source",
+         "label": "source"
+        },
+        {
+         "key": "serp_keyword",
+         "label": "serp_keyword"
+        },
+        {
+         "key": "text",
+         "label": "text"
+        },
+        {
+         "key": "url",
+         "label": "url"
+        }
+       ],
+       "rows": [
+        {
+         "word": "견과",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "고소한 원두 추천",
+         "text": "견과류 같은 고소함과 묵직한 바디감, 쓴맛이 덜한 원두가 인기입니다.",
+         "url": "https://example.com/nutty"
+        },
+        {
+         "word": "고소",
+         "polarity": "선호",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "고소한원두추천",
+         "url": ""
+        },
+        {
+         "word": "고소",
+         "polarity": "선호",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "고소하고 묵직한 원두",
+         "url": ""
+        },
+        {
+         "word": "고소",
+         "polarity": "선호",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "산미 없는 고소한 원두",
+         "url": ""
+        },
+        {
+         "word": "고소",
+         "polarity": "선호",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "고소함 원두",
+         "url": ""
+        },
+        {
+         "word": "고소",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "커피원두",
+         "text": "고소한 맛과 묵직한 바디감이 특징인 원두는 브라질·콜롬비아 산지가 많습니다.",
+         "url": "https://example.com/ai1"
+        },
+        {
+         "word": "단맛",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "커피원두",
+         "text": "달콤한 향의 원두 할인.",
+         "url": "https://example.net/shop"
+        },
+        {
+         "word": "묵직",
+         "polarity": "선호",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "고소하고 묵직한 원두",
+         "url": ""
+        },
+        {
+         "word": "묵직",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "커피원두",
+         "text": "고소한 맛과 묵직한 바디감이 특징인 원두는 브라질·콜롬비아 산지가 많습니다.",
+         "url": "https://example.com/ai1"
+        },
+        {
+         "word": "묵직",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "커피원두",
+         "text": "고소하고 묵직한 원두 TOP5",
+         "url": "https://example.net/top5"
+        },
+        {
+         "word": "묵직",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "커피원두",
+         "text": "초콜릿 향과 묵직한 바디감, 고소한 여운이 남습니다.",
+         "url": "https://example.net/top5"
+        },
+        {
+         "word": "묵직",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "고소한 원두 추천",
+         "text": "견과류 같은 고소함과 묵직한 바디감, 쓴맛이 덜한 원두가 인기입니다.",
+         "url": "https://example.com/nutty"
+        },
+        {
+         "word": "부드러움",
+         "polarity": "선호",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "부드러운 원두",
+         "url": ""
+        },
+        {
+         "word": "산미",
+         "polarity": "회피",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "산미 없는 원두",
+         "url": ""
+        },
+        {
+         "word": "산미",
+         "polarity": "선호",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "산미 있는 원두",
+         "url": ""
+        },
+        {
+         "word": "산미",
+         "polarity": "회피",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "산미 없는 고소한 원두",
+         "url": ""
+        },
+        {
+         "word": "산미",
+         "polarity": "회피",
+         "source": "SERP 문장",
+         "serp_keyword": "커피원두",
+         "text": "산미가 없는 원두를 찾는 분께 잘 맞습니다.",
+         "url": "https://example.com/ai1"
+        },
+        {
+         "word": "산미",
+         "polarity": "회피",
+         "source": "SERP 문장",
+         "serp_keyword": "고소한 원두 추천",
+         "text": "산미가 없고 고소한 원두는 라떼에도 편안하게 어울립니다.",
+         "url": "https://example.com/nutty"
+        },
+        {
+         "word": "쓴맛",
+         "polarity": "선호",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "원두 쓴맛",
+         "url": ""
+        },
+        {
+         "word": "쓴맛",
+         "polarity": "회피",
+         "source": "SERP 문장",
+         "serp_keyword": "고소한 원두 추천",
+         "text": "견과류 같은 고소함과 묵직한 바디감, 쓴맛이 덜한 원두가 인기입니다.",
+         "url": "https://example.com/nutty"
+        },
+        {
+         "word": "여운",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "커피원두",
+         "text": "초콜릿 향과 묵직한 바디감, 고소한 여운이 남습니다.",
+         "url": "https://example.net/top5"
+        },
+        {
+         "word": "초콜릿",
+         "polarity": "선호",
+         "source": "검색어",
+         "serp_keyword": "",
+         "text": "다크초콜릿 원두",
+         "url": ""
+        },
+        {
+         "word": "초콜릿",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "커피원두",
+         "text": "초콜릿 향과 고소함이 어우러져 편안한 한 잔이 됩니다.",
+         "url": "https://example.com/ai1"
+        },
+        {
+         "word": "초콜릿",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "커피원두",
+         "text": "초콜릿 향과 묵직한 바디감, 고소한 여운이 남습니다.",
+         "url": "https://example.net/top5"
+        },
+        {
+         "word": "편안",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "커피원두",
+         "text": "초콜릿 향과 고소함이 어우러져 편안한 한 잔이 됩니다.",
+         "url": "https://example.com/ai1"
+        },
+        {
+         "word": "편안",
+         "polarity": "선호",
+         "source": "SERP 문장",
+         "serp_keyword": "고소한 원두 추천",
+         "text": "산미가 없고 고소한 원두는 라떼에도 편안하게 어울립니다.",
+         "url": "https://example.com/nutty"
+        }
+       ],
+       "meta": {
+        "title": "근거 문장",
+        "takeaway": "낱말마다 앞의 몇 단위만 보인다",
+        "period": "SERP 저장 스냅샷",
+        "unit": "문장",
+        "method": "낱말별 처음 나온 단위",
+        "source": "taste_evidence_커피원두.csv",
+        "limits": "화면 문구는 판매자 · 매체 · AI 개요가 쓴 글이다 — 소비자 발화로 단정하지 않는다"
+       }
+      }
+     ]
+    },
+    {
+     "type": "paragraph",
+     "html": "계산 정의 — 검색량 하한은 canonical 그룹 최댓값의 합, 상한은 그룹 합의 합이다(표기변형이 같은 검색인지 다른 검색인지 응답이 알려주지 않는다). 낱말은 원문 어절 첫머리에서 시작하는 매칭만 센다(«대신 나노»의 «신나» 같은 경계 넘는 일치는 버린다). 매칭 뒤 같은 어절에 조사 · 어미가 아닌 글자가 이어지는 «경계 의심» 적중은 {{F15}}다 — 높으면 고유명사 · 합성어 속 일치일 수 있다. 회피는 같은 어절의 나머지와 다음 어절 · 이전 어절의 부정 표지로 판정한다. 묶음 · 밀도 · 회피는 모두 사전 규칙의 결과다[추정]."
+    }
+   ]
+  }
+ ]
+}

@@ -243,7 +243,7 @@ class Tool:
         c = self.cost["*"]
         unit = self.pol.get("unit") or c.get("output_unit") or "출력"
         tail = f" + {c['output']}×{unit}" if c["output"] else " (출력 무과금)"
-        empty = " · 빈 결과는 0(실측 1건 · 환경마다 확인)" if self.pol.get("zero_if_empty") else ""
+        empty = " · 빈 결과는 0(실측 · 환경마다 확인)" if self.pol.get("zero_if_empty") else ""
         unver = " · 명세값 · 실측 대조 전 [가정]" if self.pol.get("cost_unverified") else ""
         return f"크레딧(명세 {v}): {c['input']}×입력 키워드{tail}{empty}{unver}."
 
@@ -317,7 +317,7 @@ DEFAULTS = {n: t.defaults for n, t in REG.tools.items()}
 SYSTEM_RULES = """\
 [ListeningMind 도구 사용 규칙]
 1. 모든 수치에 라벨을 붙인다: [실제 데이터] API 반환값 · [추정] 해석·결합 · [가정] 게이트·임계값 · [데이터 공백] 미반환·결측·계산 불가.
-2. 시점은 lm_meta.data_ref_month(데이터 기준월)로 말한다. 조회일이 아니다. 지연은 lm_meta.lag_months로 응답에서 읽는다(관측 1개월). 월 그레인이므로 주간 조기경보에 쓰지 않는다.
+2. 시점은 lm_meta.data_ref_month(데이터 기준월)로 말한다. 조회일이 아니다. 지연은 lm_meta.lag_months로 응답에서 읽는다(고정값이 아니다). 월 그레인이므로 주간 조기경보에 쓰지 않는다.
 3. volume_trend_do_not_use는 판정에 쓰지 않는다. 추세는 yoy_ex_last_month, 기저 게이트 미달(below_base_gate)은 랭킹에서 뺀다.
 4. canonical이 같은 키워드는 표기변형이다. dup_of가 있는 행은 같은 검색의 중복이라 한 번만 센다. 집계는 lm_meta.variant_groups 기준으로 하되, 그룹 볼륨은 volume_lo(하한·최댓값)와 volume_hi(상한·중복 제외 합)를 병기한다 [추정]. 한쪽만 고르거나 행을 그냥 합산하지 않는다. 순위·판정은 volume_lo 기준, volume_hi로 뒤집히면 그 사실을 적는다.
 5. lm_meta.truncated가 true이거나 null(판정 불가)이면 «더 없다»고 말하지 않는다. limit을 올리거나 수렴 판정을 보류한다.
@@ -354,10 +354,10 @@ def tools_from_definitions(path):
 # ── 크레딧 결정식 ──────────────────────────────────────────────────────────
 # 결정식 = 입력 단가 × 입력 수 + 출력 단가 × 출력 수. 단가는 명세(잠금 파일)에서 온다.
 # 호출 전 상한 [가정] — 반환 수를 호출 전에 모르는 도구의 출력 상한.
-#  cluster: limit은 관계 행 수 상한이다. 관측(저장 실측 39건, limit 10~500)에서 노드 ≤ limit+1 → 기본 "observed".
+#  cluster: limit은 관계 행 수 상한이다. 저장된 실측 응답에서 노드 ≤ limit+1 → 기본 "observed".
 #           관계 행 1개는 끝점 2개라 구조상 노드 ≤ 2×limit → 보수 옵션 "structural".
-#  path   : limit은 경로 수 상한이다. 관측(6건)에서 고유 키워드/limit 최대 2.33(limit 3→7) · limit 20→25 ·
-#           30→36 · 35→45 → 기본 배수 3.
+#  path   : limit은 경로 수 상한이다. 저장된 실측 응답에서 고유 키워드/limit이 3을 넘지 않았다
+#           → 기본 배수 3.
 CLUSTER_BOUNDS = {"observed": lambda lim: lim + 1, "structural": lambda lim: 2 * lim}
 PATH_KW_MULT = 3.0
 
@@ -554,6 +554,9 @@ def _variant_groups(rows):
     return out
 
 
+SERIES_TYPES = ("all", "ads_info")   # monthly_volume 을 주는 data_type — 계약 §1 v1.3
+
+
 def annotate_keyword_info(body, data_type, queried_at, base_gate, rules=None, requested=None):
     rows = [r for r in (_data(body) or []) if isinstance(r, dict)]
     dmap = dedup_map(rows, rules)                        # T5 ① 같은 검색의 중복 (series_dedup)
@@ -581,7 +584,7 @@ def annotate_keyword_info(body, data_type, queried_at, base_gate, rules=None, re
                        "yoy_ex_last_month": "실제 데이터", "below_base_gate": "가정",
                        "last_month_suspect": "추정", "missing_months": "데이터 공백"}}
     series_rows = [r for r in rows if r.get("monthly_volume")]
-    if data_type == "all" and series_rows:
+    if data_type in SERIES_TYPES and series_rows:
         ref = max(r["monthly_volume"][-1]["month"] for r in series_rows)
         qy, qm = int(queried_at[:4]), int(queried_at[5:7])
         meta.update(data_ref_month=ref,
@@ -953,14 +956,14 @@ class Runtime:
             reason = "per_call_cap"                    # 호출 1건 상한 — 예산 가드와 같은 사전 추정
         elif self.spent + est > self.budget:
             reason = "budget_guard"
-        elif (t.pol.get("two_stage") and args.get("data_type") == "all" and self.strict
+        elif (t.pol.get("two_stage") and args.get("data_type") in SERIES_TYPES and self.strict
               and any(canon(k, self.rules) not in self.screened for k in args["keywords"])):
             reason = "two_stage"                       # 2단 조회 강제
         if reason:
             out = {"error": reason, "estimate": est, "spent": self.spent, "remaining": self.budget - self.spent}
             if reason == "two_stage":
                 out["unscreened"] = [k for k in args["keywords"] if canon(k, self.rules) not in self.screened]
-                out["hint"] = "먼저 data_type=ads_metrics로 조회하고 게이트 통과분만 all로 다시 요청할 것"
+                out["hint"] = "먼저 data_type=ads_metrics로 조회하고 게이트 통과분만 ads_info(시계열만) 또는 all로 다시 요청할 것"
             if reason == "no_estimate":
                 out["hint"] = basis
             if reason == "market_lock":

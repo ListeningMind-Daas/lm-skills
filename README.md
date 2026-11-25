@@ -20,6 +20,12 @@ MIT 라이선스입니다. 데이터는 포함돼 있지 않습니다 — 스킬
 | `validate-product-ideas` | 제품 가설이 기대는 검색 수요가 문제·목표·해결책·제품 층마다 있는지, 커지는지, 브랜드에 잠겨 있는지 수요 신호 카드로 확인한다 (출시 판정 아님) | keyword_info · intent_finder |
 | `compare-markets-across-countries` | 같은 카테고리를 한·미·일에서 국가별 동의어 매핑으로 묶어 나라 안 비중 지수·전년 동기 성장·시즌 형태를 비교한다 | keyword_info |
 | `plug-into-your-ai-agents` | API 운영 명세의 엔드포인트 전부(현재 9개)를 여러분의 AI 에이전트에 도구로 연결하고, 호출 전 예산 가드와 크레딧 원장을 붙여 모의 실행으로 먼저 검증한다 — 명세가 바뀌면 `sync`가 알리고 새 엔드포인트는 도구로 자동 추가된다 | 운영 명세 전부 (keyword_info · intent_finder · cluster_finder · path_finder · serp · trend_finder · keyword_list 2종 · usage) |
+| `forecast-season-demand` | 시드의 연관 검색어를 세그먼트로 묶고 48개월 월별 검색량으로 다음 3~6개월 수요(전년 동기 대비)와 준비·캠페인·출시·피크 월을 낸다 — 계절 역위상 경고 포함 · HTML 리포트 | intent_finder · keyword_info |
+| `find-journey-leaks` | 진입 시드에서 시작하는 세션 인접 경로를 브랜드·일반·비교·채널로 나눠, 경로가 어디서 경쟁 브랜드로 넘어가는지와 내 브랜드가 잡는·놓치는 지점을 보여준다 (예산 게이트 포함) · HTML 리포트 | path_finder · keyword_info |
+| `find-taste-words` | 연관 검색어와 검색결과 화면 문구에서 감각어·감정어를 규칙 사전으로 뽑아 검색량으로 무게를 달고 함께 나오는 말끼리 취향 묶음으로 정리한다 (회피 표현 분리) · HTML 리포트 | intent_finder · keyword_info · serp |
+| `rank-category-brands` | 분야 하나의 브랜드 사전으로 브랜드별 검색량 순위·전년 동기 변화·3년 흐름을 내고, 논브랜드를 분리한 검색 점유(근사)와 한국 성별·연령별 순위를 보여준다 · HTML 리포트 | keyword_info |
+| `map-entry-situations` | 연관 검색어와 앞선 검색 경로에서 진입 상황(CEP)을 규칙 사전으로 뽑아 논브랜드 검색량·전년 동기 추세·계절성·브랜드 연결로 줄 세운 CEP 지도를 낸다 · HTML 리포트 | intent_finder · path_finder · keyword_info |
+| `spot-segment-risers` | 급부상 이슈와 연관 검색어에서 후보를 모아 한국 성별·연령 세그먼트별 급등·신규·과대 지수 대상을 줄 세운다 (일본·미국은 전체 순위만) · HTML 리포트 | trend_finder · intent_finder · keyword_info |
 | `lm-skill-creator` | 같은 규율을 지키는 새 스킬을 만든다 · 기존 스킬을 감사한다 | — |
 
 ### 이전 카탈로그와의 대응

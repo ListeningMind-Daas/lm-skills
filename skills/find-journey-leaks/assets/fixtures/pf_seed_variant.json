@@ -1,0 +1,30 @@
+{
+ "request_detail": {
+  "keyword": "런닝화",
+  "gl": "kr",
+  "limit": 3,
+  "time_point": "curr"
+ },
+ "cost_detail": {
+  "total_cost": 330,
+  "unit": "unique_keywords",
+  "input_count": 7
+ },
+ "data": [
+  [
+   "러닝화",
+   "러닝화 추천",
+   "나이키 페가수스"
+  ],
+  [
+   "러닝화",
+   "쿠션 좋은 러닝화",
+   "아식스 젤카야노"
+  ],
+  [
+   "러닝화",
+   "러닝화 순위",
+   "아디다스 아디제로"
+  ]
+ ]
+}

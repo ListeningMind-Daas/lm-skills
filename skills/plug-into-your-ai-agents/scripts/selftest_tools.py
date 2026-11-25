@@ -52,8 +52,8 @@ def main():
             if sorted(names) != sorted(lm_tools.REG.default_names()) or any(key not in d for d in defs):
                 fails.append((f"schema {fmt}", f"도구 이름·형식 불일치: {names}"))
         kid = lm_tools.REG.get("lm_keyword_info")
-        if "ads_info" in json.dumps(kid.schema):
-            fails.append(("schema", "ads_info가 노출돼 있다 — all의 하위집합(계약 §1)"))
+        if "ads_info" not in json.dumps(kid.schema):
+            fails.append(("schema", "ads_info가 노출되지 않았다 — 계약 §1 v1.3은 시계열만 필요할 때 ads_info를 허용한다"))
         # 1.5) 잠금 파일 = 운영 명세 — 엔드포인트가 전부 도구가 되고, 판단 파일과 어긋나지 않는다
         lock = json.loads(lm_tools.LOCK_PATH.read_text(encoding="utf-8"))
         if sorted(t.path for t in lm_tools.REG.tools.values()) != sorted(lock["endpoints"]):
@@ -176,7 +176,7 @@ def main():
                                                lm_tools.load_rules('{"썬": "선"}'), ki_real["args"]["keywords"])
         gs = ruled["lm_meta"]["variant_groups"].get("선크림") or {}
         if plain["lm_meta"]["variant_groups"] or sorted(gs.get("keywords") or []) != ["선크림", "썬크림"] \
-                or (gs.get("volume_lo"), gs.get("volume_hi")) != (68973, 68973 + 65186):
+                or (gs.get("volume_lo"), gs.get("volume_hi")) != (41380, 41380 + 39110):
             fails.append(("T5 규칙", f"썬→선 규칙으로 실측 변형이 묶이지 않았다: {gs}"))
         if "variant_bounds_note" not in vm or "volume_lo" not in lm_tools.SYSTEM_RULES:
             fails.append(("T5", "하한·상한 병기 주석 또는 시스템 규칙이 없다"))
@@ -201,11 +201,11 @@ def main():
                     fails.append(("실측 모양", "structural 상한이 observed보다 작다"))
             if it["tool"] == "lm_path_finder" and out["lm_meta"]["unique_keywords"] != cd["output_count"]:
                 fails.append(("실측 모양", f"{f.name}: 경로 고유 키워드 ≠ output_count"))
-        # 관측 기록(평가 2026-09-28 · 공개 번들 밖 응답 포함)도 기본 상한이 덮는가 — (limit, 실제 과금 단위)
-        for lim, n in ((10, 11), (50, 44), (50, 50), (100, 88), (500, 501), (500, 482)):
+        # 기본 상한 규칙(노드 ≤ limit+1 · 경로 키워드 ≤ limit×3)의 경계값을 기본 추정이 덮는가 — (limit, 과금 단위)
+        for lim, n in ((10, 11), (50, 51), (100, 101), (500, 501)):
             if lm_tools.estimate("lm_cluster_finder", {"limit": lim})[0] < 150 + 50 * n:
                 fails.append(("상한", f"cluster limit {lim} 노드 {n}을 기본 추정이 덮지 못한다"))
-        for lim, n in ((3, 7), (20, 25), (30, 36), (35, 45), (35, 32)):
+        for lim, n in ((3, 9), (20, 60), (30, 90), (35, 105)):
             if lm_tools.estimate("lm_path_finder", {"limit": lim})[0] < 50 + 40 * n:
                 fails.append(("상한", f"path limit {lim} 키워드 {n}을 기본 추정이 덮지 못한다"))
 

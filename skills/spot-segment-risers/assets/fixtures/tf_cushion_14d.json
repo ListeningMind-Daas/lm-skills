@@ -1,0 +1,60 @@
+{
+ "result": "OK",
+ "source": "listeningmind-data-api",
+ "request_at": "2026-10-15T00:00:00.000Z",
+ "request_detail": {
+  "keyword": "쿠션",
+  "gl": "kr",
+  "period_days": 14,
+  "limit": 5,
+  "sort": "score",
+  "order": "desc"
+ },
+ "cost_detail": {
+  "input_cost": 50,
+  "input_count": 1,
+  "input_total_cost": 50,
+  "output_cost": 2,
+  "output_count": 2,
+  "output_total_cost": 4,
+  "total_cost": 54
+ },
+ "used_credits": 0,
+ "total": 2,
+ "data": [
+  {
+   "keyword": "글로우 쿠션",
+   "issue_score": 5.5,
+   "content_type": "web",
+   "topic": "뷰티",
+   "freshness": 0.5,
+   "summary": [
+    "(합성) 글로우 쿠션 관련 검색결과 요약 문장 1.",
+    "(합성) 글로우 쿠션 관련 검색결과 요약 문장 2."
+   ],
+   "source_links": [
+    "https://example.com/쿠션/0/0",
+    "https://example.com/쿠션/0/1",
+    "https://example.com/쿠션/0/2"
+   ],
+   "index_date": "2026-10-08"
+  },
+  {
+   "keyword": "마스크 쿠션",
+   "issue_score": 3.1,
+   "content_type": "web",
+   "topic": "뷰티",
+   "freshness": 0.5,
+   "summary": [
+    "(합성) 마스크 쿠션 관련 검색결과 요약 문장 1.",
+    "(합성) 마스크 쿠션 관련 검색결과 요약 문장 2."
+   ],
+   "source_links": [
+    "https://example.com/쿠션/1/0",
+    "https://example.com/쿠션/1/1",
+    "https://example.com/쿠션/1/2"
+   ],
+   "index_date": "2026-10-03"
+  }
+ ]
+}

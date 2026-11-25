@@ -12,7 +12,7 @@
   - 결측 창은 0으로 합산하지 않고 계산 불가로 센다                    (T6)
   - 빈 응답은 [데이터 공백]으로 멈춘다
   - 문서의 파이프라인(budget → nodes → build_universe → score → trend_yoy → score --trend)이 끝까지 돈다
-  회귀(2026-09-28 실데이터 평가 결함):
+  회귀(v1.2 실데이터 평가 결함):
   - P1-1 기준월 원천(--seed-all 또는 --trend)이 없으면 경고 + 종료 코드 3, 있으면 모든 행에 data_ref_month
   - P1-2 한 허브에 간선이 몰리면 «별 모양 퇴화»를 경고하고, 절단 설명이 «먼 주변부»를 단정하지 않는다
   - P1-3 한 키워드짜리 브랜드 군집도 «브랜드 지배» · 브랜드 시드면 경고
@@ -20,7 +20,7 @@
   - P2 역방향 중복 간선은 degree에 한 번만 · 같은 검색의 중복(dup_of)은 볼륨에 한 번만 ·
        2단 대상은 volume_avg × 3 < yoy_gate면 제외 · STEP 7은 stage2 파일을 덮어쓰지 않는다 ·
        budget은 보수·관측 상한을 둘 다 낸다
-  회귀(2026-09-30 선크림 실행 결함):
+  회귀(v1.3.0 선크림 예시 실행 결함):
   - nodes와 score가 같은 canonical(변형치환 규칙)로 시드를 대조한다 — 선크림 → 썬크림에서 nodes만 «없다»던 불일치
   - budget --pilot-nodes로 keyword_list 파일럿 노드 수를 넣으면 본 호출 금액이 정확히 나오고, --cap 초과면 종료 코드 1 ·
     nodes --pilot이 파일럿과 본 호출 노드 집합을 대조한다
@@ -149,7 +149,7 @@ def doc_columns(marker):
 
 
 def regress_0930(tmp, fails):
-    """2026-09-30 선크림 실행 결함 회귀 — 시드 표기변형 대조 · 파일럿 예산 · all 병합 · 종료 코드 문서."""
+    """v1.3.0 선크림 예시 실행 결함 회귀 — 시드 표기변형 대조 · 파일럿 예산 · all 병합 · 종료 코드 문서."""
     w = lambda n, o: (tmp / n).write_text(json.dumps(o, ensure_ascii=False), encoding="utf-8")
     # API가 시드 «선크림»을 «썬크림»으로 돌려준 그래프
     comms = {"0": ["썬크림", "선크림 추천", "선크림 종류"], "1": ["무기자차 선크림", "유기자차 선크림", "톤업 선크림"]}
@@ -192,7 +192,7 @@ def regress_0930(tmp, fails):
     if rc or not line(out_s) or line(out_s) != line(out_n):
         fails.append(("score (0930)", "score와 nodes의 시드 대조 결과가 다르다", f"nodes: {line(out_n)} / score: {line(out_s)} rc={rc}"))
 
-    # 3) 파일럿 예산 — keyword_list 노드 수로 본 호출 금액을 정확히 (실측: limit 90 → 89 · 208 · 4,600)
+    # 3) 파일럿 예산 — keyword_list 노드 수로 본 호출 금액을 정확히 (결정식 30 + 2 × N · 150 + 50 × N)
     rc, out = run(sm + ["budget", "--limit", "90", "--pilot-nodes", "89", "--cap", "5500"], tmp)
     if rc or "208" not in out or "4,600" not in out or "4,907" not in out or "S ≤ 59" not in out:
         fails.append(("budget (0930)", "파일럿 반영 금액(208 · 4,600 · 총 4,907 + 10 × S · S ≤ 59) 이상", out[-300:]))

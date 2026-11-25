@@ -1,0 +1,111 @@
+{
+ "result": "OK",
+ "source": "listeningmind-data-api",
+ "request_at": "2026-10-15T00:00:00.000Z",
+ "request_detail": {
+  "keyword": "선크림",
+  "gl": "kr",
+  "period_days": 90,
+  "limit": 5,
+  "sort": "score",
+  "order": "desc"
+ },
+ "cost_detail": {
+  "input_cost": 50,
+  "input_count": 1,
+  "input_total_cost": 50,
+  "output_cost": 2,
+  "output_count": 5,
+  "output_total_cost": 10,
+  "total_cost": 60
+ },
+ "used_credits": 0,
+ "total": 12,
+ "data": [
+  {
+   "keyword": "톤업 선크림",
+   "issue_score": 7.1,
+   "content_type": "web",
+   "topic": "뷰티",
+   "freshness": 0.5,
+   "summary": [
+    "(합성) 톤업 선크림 관련 검색결과 요약 문장 1.",
+    "(합성) 톤업 선크림 관련 검색결과 요약 문장 2."
+   ],
+   "source_links": [
+    "https://example.com/선크림/0/0",
+    "https://example.com/선크림/0/1",
+    "https://example.com/선크림/0/2"
+   ],
+   "index_date": "2026-09-20"
+  },
+  {
+   "keyword": "선스틱 신상",
+   "issue_score": 6.4,
+   "content_type": "web",
+   "topic": "뷰티",
+   "freshness": 0.5,
+   "summary": [
+    "(합성) 선스틱 신상 관련 검색결과 요약 문장 1.",
+    "(합성) 선스틱 신상 관련 검색결과 요약 문장 2."
+   ],
+   "source_links": [
+    "https://example.com/선크림/1/0",
+    "https://example.com/선크림/1/1",
+    "https://example.com/선크림/1/2"
+   ],
+   "index_date": "2026-08-02"
+  },
+  {
+   "keyword": "선크림 광고 모델",
+   "issue_score": 6.0,
+   "content_type": "web",
+   "topic": "뷰티",
+   "freshness": 0.5,
+   "summary": [
+    "(합성) 선크림 광고 모델 관련 검색결과 요약 문장 1.",
+    "(합성) 선크림 광고 모델 관련 검색결과 요약 문장 2."
+   ],
+   "source_links": [
+    "https://example.com/선크림/2/0",
+    "https://example.com/선크림/2/1",
+    "https://example.com/선크림/2/2"
+   ],
+   "index_date": "2026-09-11"
+  },
+  {
+   "keyword": "쿨링 선크림",
+   "issue_score": 5.2,
+   "content_type": "web",
+   "topic": "뷰티",
+   "freshness": 0.5,
+   "summary": [
+    "(합성) 쿨링 선크림 관련 검색결과 요약 문장 1.",
+    "(합성) 쿨링 선크림 관련 검색결과 요약 문장 2."
+   ],
+   "source_links": [
+    "https://example.com/선크림/3/0",
+    "https://example.com/선크림/3/1",
+    "https://example.com/선크림/3/2"
+   ],
+   "index_date": "2026-07-30"
+  },
+  {
+   "keyword": "톤업선크림",
+   "issue_score": 4.9,
+   "content_type": "web",
+   "topic": "뷰티",
+   "freshness": 0.5,
+   "summary": [
+    "(합성) 톤업선크림 관련 검색결과 요약 문장 1.",
+    "(합성) 톤업선크림 관련 검색결과 요약 문장 2."
+   ],
+   "source_links": [
+    "https://example.com/선크림/4/0",
+    "https://example.com/선크림/4/1",
+    "https://example.com/선크림/4/2"
+   ],
+   "index_date": "2026-08-15"
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keyword": "선크림",
+  "gl": "kr",
+  "limit": 5
+ },
+ "cost_detail": {
+  "total_cost": 210
+ },
+ "data": [
+  [
+   "여름 휴가",
+   "썬크림"
+  ],
+  [
+   "바다",
+   "썬크림",
+   "썬크림 추천"
+  ]
+ ]
+}

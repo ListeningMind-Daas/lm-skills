@@ -17,7 +17,7 @@
          · 같은 canonical(--rules 치환 포함)의 응답 행은 한 후보로 묶고, 지표까지 같은 행(series_dedup.dedup_map)은 같은 검색으로 병합한다
          · 탈락·미반환은 버리지 않는다 — meta의 screen.rows에 volume_avg와 함께 남고 trend_signals.py가 사유별로 적는다
 
-크레딧 결정식(계약 §1): trend_finder = 50 × 결과가 있는 호출 + 2 × 반환 이슈 — 빈 결과 호출은 0(2026-09-29 실측).
+크레딧 결정식(계약 §1): trend_finder = 50 × 결과가 있는 호출 + 2 × 반환 이슈 — 빈 결과 호출은 0(환경마다 확인).
 예산 상한은 호출마다 50 + 2 × limit로 잡는다.
 """
 import argparse, csv, json, pathlib, re, sys

@@ -1,0 +1,17 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keywords": [
+   "쿠션"
+  ],
+  "gl": "kr",
+  "limit": 20
+ },
+ "cost_detail": {
+  "total_cost": 34
+ },
+ "data": [
+  "쿠션 팩트 추천",
+  "쿠션 퍼프 세척"
+ ]
+}

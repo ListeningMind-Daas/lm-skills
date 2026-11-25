@@ -1,0 +1,21 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keywords": [
+   "선크림"
+  ],
+  "gl": "kr",
+  "limit": 6
+ },
+ "cost_detail": {
+  "total_cost": 42
+ },
+ "data": [
+  "선크림 추천",
+  "썬크림",
+  "남자 선크림",
+  "무기자차 선크림",
+  "선쿠션",
+  "선크림 바르는 순서"
+ ]
+}

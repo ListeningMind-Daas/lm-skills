@@ -139,14 +139,14 @@ def main():
             fails.append(("path_budget", "표기변형 후보의 볼륨을 그룹으로 합치거나 최댓값으로 바꿨다 "
                                          "— 게이트는 키워드 단위여야 한다 (T5 경계 미적용 범위)", out[-300:]))
 
-        # ── 회귀(2026-09-28 실데이터 평가) — keyword_info가 표기를 바꾸고(캠핑의자 → 캠핑 의자)
-        #    표기변형 후보를 한 행으로 합친다(무선 청소기 + 무선청소기 요청 → 1행, 과금 4)
+        # ── 회귀(v0.2 실데이터 평가 결함) — keyword_info가 표기를 바꾸고(캠핑의자 → 캠핑 의자)
+        #    표기변형 후보를 한 행으로 합친다(무선 청소기 + 무선청소기 요청 → 1행, 과금은 요청 수 — 합성 값)
         (tmp / "real_metrics.json").write_text(json.dumps({
             "request_detail": {"keywords": ["캠핑의자", "무선 청소기", "무선청소기", "릴렉스체어", "없는후보"]},
             "cost_detail": {"total_cost": 5},
-            "data": [{"keyword": "캠핑 의자", "ads_metrics": {"volume_avg": 69366}},
-                     {"keyword": "무선청소기", "ads_metrics": {"volume_avg": 121800}},
-                     {"keyword": "릴렉스 체어", "ads_metrics": {"volume_avg": 5873}}]}, ensure_ascii=False), encoding="utf-8")
+            "data": [{"keyword": "캠핑 의자", "ads_metrics": {"volume_avg": 70000}},
+                     {"keyword": "무선청소기", "ads_metrics": {"volume_avg": 120000}},
+                     {"keyword": "릴렉스 체어", "ads_metrics": {"volume_avg": 6000}}]}, ensure_ascii=False), encoding="utf-8")
         rc, out = run([f"{S}/path_budget.py", "--metrics", "real_metrics.json", "--limit", "35",
                        "--budget", "5000", "--pilot", "resp_pilot.json", "-o", "plan_real.csv"], tmp)
         rr = {r["keyword"]: r for r in rows(tmp / "plan_real.csv")} if not rc else {}
@@ -174,7 +174,7 @@ def main():
             fails.append(("P2", "전부 hold_budget인데 최대 limit 제안(1시드: (5000-335-50)//40/1.75 → 65)이 없거나 틀리다", out[-300:]))
         txt = SKILL.read_text(encoding="utf-8") + (HERE.parent / "scripts" / "path_budget.py").read_text(encoding="utf-8")
         if "안전한 방향" in txt or "안전한 쪽" in txt:
-            fails.append(("P2", "«파일럿 r은 늘 안전한 쪽» 주장이 남았다 — 실측 반례(과소 40)", ""))
+            fails.append(("P2", "«파일럿 r은 늘 안전한 쪽» 주장이 남았다 — 실측 반례(계획 과소)", ""))
         st = json.loads(STAGES.read_text(encoding="utf-8"))
         sit = next(t["pattern"] for t in st["themes"] if t["name"] == "상황·조건").split("|")
         if any(w in sit for w in ("아이", "하이", "로우", "릴랙스")):
@@ -238,9 +238,9 @@ def main():
         elif "· 절단 ·" not in out:
             fails.append(("journey_paths", "@limit 생략 시 request_detail.limit으로 절단 판정하지 못했다", out[-300:]))
 
-        # ── 회귀(2026-09-30 선크림 KR 실데이터) — v0.3.0
-        #    ① path_finder가 시드 표기를 바꿔 돌려줌(선크림 → 썬크림 20/20경로) ② 사용자 지정 시드 고정
-        #    ④ 공통 줄기(선스틱 13/40경로가 앞 3걸음 동일) ⑤ 좁힌 계획이면 보류 후보가 «없음»으로 나옴
+        # ── 회귀(v0.3.0 선크림 KR 예시 실행 결함 — 값은 합성)
+        #    ① path_finder가 시드 표기를 바꿔 돌려줌(선크림 → 썬크림, 전 경로) ② 사용자 지정 시드 고정
+        #    ④ 공통 줄기(반환 경로 일부가 앞 3걸음 동일) ⑤ 좁힌 계획이면 보류 후보가 «없음»으로 나옴
         sun_paths = [["썬크림", "선크림 종류", "유기자차 선크림", "무기자차 유기자차 차이"],
                      ["썬크림", "선크림 종류", "유기자차 선크림", "혼합자차 선크림"],
                      ["썬크림", "선크림 종류", "유기자차 선크림", "무기자차 선크림 추천"],
@@ -288,9 +288,9 @@ def main():
         # ② 사용자 지정 시드 고정 — 볼륨 순이면 «선크림 추천», 지정하면 «선스틱»
         (tmp / "sun_metrics.json").write_text(json.dumps({
             "request_detail": {"keywords": ["선크림", "선크림 추천", "선스틱"]}, "cost_detail": {"total_cost": 3},
-            "data": [{"keyword": "선크림", "ads_metrics": {"volume_avg": 65186}},
-                     {"keyword": "선크림 추천", "ads_metrics": {"volume_avg": 39550}},
-                     {"keyword": "선스틱", "ads_metrics": {"volume_avg": 27550}}]}, ensure_ascii=False), encoding="utf-8")
+            "data": [{"keyword": "선크림", "ads_metrics": {"volume_avg": 65000}},
+                     {"keyword": "선크림 추천", "ads_metrics": {"volume_avg": 40000}},
+                     {"keyword": "선스틱", "ads_metrics": {"volume_avg": 28000}}]}, ensure_ascii=False), encoding="utf-8")
         (tmp / "sun_pilot.json").write_text(json.dumps({
             "request_detail": {"keyword": "선크림", "gl": "kr", "limit": 5}, "cost_detail": {"total_cost": 170},
             "data": [["썬크림", "선크림 추천"], ["썬크림", "선크림 종류"]]}, ensure_ascii=False), encoding="utf-8")
@@ -321,10 +321,10 @@ def main():
             fails.append(("v0.3-3", "--recall-pilot인데 파일럿 시드를 본 limit으로 재호출 계획하지 않았다", plans["recall"][1][-300:]))
 
         # ⑤ 좁힌 계획 — 보류 행이 없어도 «없음»이라고 쓰지 않고, --plan-full이면 빠진 후보를 싣는다
-        #    (2026-09-30처럼 후보를 지운 metrics로 세운 계획 — 부른 시드 두 행뿐)
+        #    (선크림 예시 실행처럼 후보를 지운 metrics로 세운 계획 — 부른 시드 두 행뿐)
         (tmp / "plan_narrow.csv").write_text(
             "keyword,requested_keyword,volume_avg,decision,note\n"
-            "선크림,선크림,65186,pilot_done,\n선스틱,선스틱,27550,call,\n", encoding="utf-8")
+            "선크림,선크림,65000,pilot_done,\n선스틱,선스틱,28000,call,\n", encoding="utf-8")
         rc, out = run([f"{S}/journey_paths.py", "--run", "선크림=resp_sun.json", "--stages", with_rule,
                        "--category", "nar", "--out-dir", "out_nar", "--plan", "plan_narrow.csv"], tmp)
         ns = (tmp / "out_nar" / "journey_summary_nar.md").read_text(encoding="utf-8") if not rc else ""
