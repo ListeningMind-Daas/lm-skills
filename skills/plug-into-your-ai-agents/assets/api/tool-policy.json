@@ -1,9 +1,12 @@
 {
  "_note": "사람이 검토해 적는 판단 — 명세(api-lock.json)만으로는 정할 수 없는 것. 인자 스키마·단가는 여기 적지 않는다(명세에서 온다). 명세에 새로 생긴 엔드포인트는 여기 항목이 없어도 도구로 자동 추가되지만 «검토 전»이라 기본으로 꺼진다 — 검토한 뒤 항목을 추가해 켠다.",
  "hidden_params": [
-  "user_query"
+  "user_query",
+  "is_skills",
+  "skill_desc",
+  "response_format"
  ],
- "hidden_params_note": "user_query(사용자 질의 원문)는 에이전트 대화 원문을 API로 보내므로 도구에 노출하지 않는다 — 필요하면 사람이 결정해 Runtime(pass_params=…)으로 연다",
+ "hidden_params_note": "user_query(사용자 질의 원문)는 에이전트 대화 원문을 API로 보내므로 도구에 노출하지 않는다 — 필요하면 사람이 결정해 Runtime(pass_params=…)으로 연다. is_skills·skill_desc는 명세상 ListeningMind 자체 스킬·MCP 경유 호출의 이력 표시용이고, response_format=download_url은 data 대신 다운로드 메타만 돌려줘 응답 주석·검증이 돌지 않아 노출하지 않는다",
  "tools": {
   "/keyword_info": {
    "name": "lm_keyword_info",
@@ -23,6 +26,14 @@
    },
    "enum_only_note": "ads_info를 노출한다(계약 §1 v1.3) — 시계열만 필요하면 ads_info, 의도·인구통계도 필요하면 all. ads_info 단가는 환경마다 다를 수 있어(명세 1) 원장의 cost_detail로 확인한다",
    "guide": "키워드별 검색량·광고지표(ads_metrics), 월별 시계열(ads_info), 또는 시계열·의도·인구통계(all)를 조회한다. ads_info 단가는 환경마다 다르니 첫 호출의 cost_detail로 확인한다. 과금은 요청한 키워드 수다. 응답에는 요청하지 않은 표기변형 행이 함께 오고(예: 선크림 요청에 썬크림), 요청 키워드가 다른 표기로 올 수 있다 — 행마다 canonical·dup_of가 붙고 lm_meta.variant_groups·not_returned를 본다. 반드시 2단으로 쓴다: 먼저 후보 전량을 ads_metrics로, 그다음 볼륨 게이트를 통과한 키워드만 ads_info(시계열만) 또는 all로. ads_metrics로 확인하지 않은 키워드(함께 돌아온 변형은 확인된 것으로 본다)에 ads_info·all을 걸면 런타임이 막는다. 응답의 volume_trend는 volume_trend_do_not_use로 옮겨져 있다 — 추세는 yoy_ex_last_month(전년 동기 비교)를 쓴다. 답에는 lm_meta.data_ref_month(데이터 기준월)를 조회일과 구분해 적는다. demography는 일부 시장만 반환된다(사양)."
+  },
+  "/keyword_info/monthly_volume": {
+   "name": "lm_keyword_info_monthly_volume",
+   "estimate": "exact",
+   "count": "none",
+   "annotate": "keyword_info",
+   "billed_inputs": "cost_detail",
+   "guide": "키워드 여러 개(최대 1000개)의 월별 검색량 시계열만 돌려준다. 값은 lm_keyword_info(all)의 monthly_volume과 같다(명세 설명). date_from·date_to(YYYY-MM, 해당 월 포함, 최대 48개월)로 기간을 좁힐 수 있고 생략하면 최근 4년 전체가 온다 — 기간 선택은 이 도구에만 있다. 과금은 반환된 행 수다 — 색인에 없거나 기간 안에 값이 없는 키워드는 응답에서 빠지고 과금되지 않지만, 요청하지 않은 표기변형 행이 함께 오면 그 행도 과금된다. 호출 전 추정은 요청 키워드 수 기준이라 실제가 더 클 수 있다. 행 순서는 요청 순서와 다를 수 있다. 시계열만 필요할 때 쓰고, 의도·인구통계가 함께 필요하면 볼륨 게이트를 통과한 키워드에 lm_keyword_info(all)을 쓴다. 답에는 lm_meta.data_ref_month(데이터 기준월)를 조회일과 구분해 적는다. 추세는 yoy_ex_last_month(전년 동기 비교)를 쓴다. DaaS 키 전용이다."
   },
   "/intent_finder/keyword_list": {
    "name": "lm_intent_finder",

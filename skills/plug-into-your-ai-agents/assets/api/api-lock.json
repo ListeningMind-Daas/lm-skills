@@ -1,7 +1,7 @@
 {
  "api_title": "listeningmind-data-api",
- "spec_version": "v0.0.60",
- "synced_at": "2026-09-29",
+ "spec_version": "v1.0.20",
+ "synced_at": "2026-11-13",
  "endpoints": {
   "/cluster_finder": {
    "method": "POST",
@@ -38,15 +38,15 @@
     "limit": {
      "type": "integer",
      "default": 500,
-     "minimum": 1.0,
-     "maximum": 10000.0,
+     "minimum": 1,
+     "maximum": 10000,
      "description": "관계 수 제한"
     },
     "hop": {
      "type": "integer",
      "default": 2,
-     "minimum": 1.0,
-     "maximum": 3.0,
+     "minimum": 1,
+     "maximum": 3,
      "description": "hop 수"
     },
     "orientation": {
@@ -72,6 +72,24 @@
     "user_query": {
      "type": "string",
      "description": "이 요청을 유발한 사용자 질의 원문(선택, LLM/MCP 경유 호출용). 질의-검색 연관성 분석을 위해 이력(history)의 request_detail에 함께 적재된다."
+    },
+    "is_skills": {
+     "type": "boolean",
+     "default": false,
+     "description": "우리 서비스 스킬 경유 호출 여부(선택, MCP 경유 호출용). 스킬에서 호출하면 true, 그 외(MCP 연동 일반 호출·직접 호출)는 false(기본). 이력(history)의 is_skills 로 적재된다."
+    },
+    "skill_desc": {
+     "type": "object",
+     "description": "스킬 경유 호출일 때 실행 중인 스킬 정보(선택, JSON 객체, MCP 경유 호출용). 스킬 지침에 적힌 값을 그대로 받는다. 스킬 경유가 아니면 보내지 않는다(null). 이력(history)의 skill_desc 로 적재된다."
+    },
+    "response_format": {
+     "type": "string",
+     "enum": [
+      "json",
+      "download_url"
+     ],
+     "default": "json",
+     "description": "응답 데이터 전달 방식 - `json`: data 필드에 직접 포함(기본) - `download_url`: 데이터를 파일로 GitHub 저장소에 올리고 응답의 download에 다운로드 메타데이터(주소·sha256·크기)만 담는다(LLM/스킬 경유 대용량 조회용)"
     }
    },
    "required": [
@@ -122,15 +140,15 @@
     "limit": {
      "type": "integer",
      "default": 500,
-     "minimum": 1.0,
-     "maximum": 10000.0,
+     "minimum": 1,
+     "maximum": 10000,
      "description": "관계 수 제한"
     },
     "hop": {
      "type": "integer",
      "default": 2,
-     "minimum": 1.0,
-     "maximum": 3.0,
+     "minimum": 1,
+     "maximum": 3,
      "description": "hop 수"
     },
     "orientation": {
@@ -142,6 +160,24 @@
      ],
      "default": "UNDIRECTED",
      "description": "관계 방향"
+    },
+    "response_format": {
+     "type": "string",
+     "enum": [
+      "json",
+      "download_url"
+     ],
+     "default": "json",
+     "description": "응답 데이터 전달 방식 - `json`: data 필드에 직접 포함(기본) - `download_url`: 데이터를 파일로 GitHub 저장소에 올리고 응답의 download에 다운로드 메타데이터(주소·sha256·크기)만 담는다(LLM/스킬 경유 대용량 조회용)"
+    },
+    "is_skills": {
+     "type": "boolean",
+     "default": false,
+     "description": "우리 서비스 스킬 경유 호출 여부(선택, MCP 경유 호출용). 스킬에서 호출하면 true, 그 외(MCP 연동 일반 호출·직접 호출)는 false(기본). 이력(history)의 is_skills 로 적재된다."
+    },
+    "skill_desc": {
+     "type": "object",
+     "description": "스킬 경유 호출일 때 실행 중인 스킬 정보(선택, JSON 객체, MCP 경유 호출용). 스킬 지침에 적힌 값을 그대로 받는다. 스킬 경유가 아니면 보내지 않는다(null). 이력(history)의 skill_desc 로 적재된다."
     }
    },
    "required": [
@@ -189,8 +225,8 @@
     "limit": {
      "type": "integer",
      "default": 100,
-     "minimum": 1.0,
-     "maximum": 10000.0,
+     "minimum": 1,
+     "maximum": 10000,
      "description": "키워드 수 제한"
     },
     "sort": {
@@ -217,6 +253,24 @@
     "user_query": {
      "type": "string",
      "description": "이 요청을 유발한 사용자 질의 원문(선택, LLM/MCP 경유 호출용). 질의-검색 연관성 분석을 위해 이력(history)의 request_detail에 함께 적재된다."
+    },
+    "is_skills": {
+     "type": "boolean",
+     "default": false,
+     "description": "우리 서비스 스킬 경유 호출 여부(선택, MCP 경유 호출용). 스킬에서 호출하면 true, 그 외(MCP 연동 일반 호출·직접 호출)는 false(기본). 이력(history)의 is_skills 로 적재된다."
+    },
+    "skill_desc": {
+     "type": "object",
+     "description": "스킬 경유 호출일 때 실행 중인 스킬 정보(선택, JSON 객체, MCP 경유 호출용). 스킬 지침에 적힌 값을 그대로 받는다. 스킬 경유가 아니면 보내지 않는다(null). 이력(history)의 skill_desc 로 적재된다."
+    },
+    "response_format": {
+     "type": "string",
+     "enum": [
+      "json",
+      "download_url"
+     ],
+     "default": "json",
+     "description": "응답 데이터 전달 방식 - `json`: data 필드에 직접 포함(기본) - `download_url`: 데이터를 파일로 GitHub 저장소에 올리고 응답의 download에 다운로드 메타데이터(주소·sha256·크기)만 담는다(LLM/스킬 경유 대용량 조회용)"
     }
    },
    "required": [
@@ -269,6 +323,24 @@
     "user_query": {
      "type": "string",
      "description": "이 요청을 유발한 사용자 질의 원문(선택, LLM/MCP 경유 호출용). 질의-검색 연관성 분석을 위해 이력(history)의 request_detail에 함께 적재된다."
+    },
+    "is_skills": {
+     "type": "boolean",
+     "default": false,
+     "description": "우리 서비스 스킬 경유 호출 여부(선택, MCP 경유 호출용). 스킬에서 호출하면 true, 그 외(MCP 연동 일반 호출·직접 호출)는 false(기본). 이력(history)의 is_skills 로 적재된다."
+    },
+    "skill_desc": {
+     "type": "object",
+     "description": "스킬 경유 호출일 때 실행 중인 스킬 정보(선택, JSON 객체, MCP 경유 호출용). 스킬 지침에 적힌 값을 그대로 받는다. 스킬 경유가 아니면 보내지 않는다(null). 이력(history)의 skill_desc 로 적재된다."
+    },
+    "response_format": {
+     "type": "string",
+     "enum": [
+      "json",
+      "download_url"
+     ],
+     "default": "json",
+     "description": "응답 데이터 전달 방식 - `json`: data 필드에 직접 포함(기본) - `download_url`: 데이터를 파일로 GitHub 저장소에 올리고 응답의 download에 다운로드 메타데이터(주소·sha256·크기)만 담는다(LLM/스킬 경유 대용량 조회용)"
     }
    },
    "required": [
@@ -293,6 +365,76 @@
     }
    },
    "cost_by": "data_type"
+  },
+  "/keyword_info/monthly_volume": {
+   "method": "POST",
+   "operation_id": "keyword_info_monthly_volume",
+   "summary": "ListeningMind 키워드 월별 검색량 조회",
+   "description": "키워드(최대 1000개)별 월별 검색량(monthly_volume)만 조회합니다. /keyword_info 응답 항목 중 keyword·monthly_volume 만 반환하며 값은 동일합니다. date_from/date_to(YYYY-MM, 최대 4년)로 기간을 지정하면 해당 월만 반환하고, 생략하면 제공 범위 전체(색인된 최신 월 기준 최근 4년)를 반환합니다. 최신 월은 수집 주기에 따라 이번 달보다 늦을 수 있습니다. DaaS(data) 키 전용.",
+   "params": {
+    "keywords": {
+     "type": "array",
+     "minItems": 1,
+     "maxItems": 1000,
+     "items": {
+      "type": "string"
+     },
+     "description": "요청 키워드 리스트(최대 1000개, 중복은 입력 순서를 유지한 채 제거)"
+    },
+    "gl": {
+     "type": "string",
+     "enum": [
+      "kr",
+      "jp",
+      "us"
+     ],
+     "description": "국가 코드"
+    },
+    "date_from": {
+     "type": "string",
+     "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+     "description": "조회 시작 월(선택, `YYYY-MM`, 해당 월 포함). 월별 검색량은 색인된 최신 월 기준 최근 4년치만 있으며(최신 월은 수집 주기에 따라 이번 달보다 늦을 수 있음), 데이터에 없는 월은 결과에서 빠진다. date_from·date_to 를 모두 생략하면 전체(4년치) 반환"
+    },
+    "date_to": {
+     "type": "string",
+     "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+     "description": "조회 종료 월(선택, `YYYY-MM`, 해당 월 포함). date_from 보다 이전이거나, date_from~date_to 가 48개월(4년)을 넘으면 422. 하나만 보내면 나머지 쪽은 제한 없음"
+    },
+    "user_query": {
+     "type": "string",
+     "description": "이 요청을 유발한 사용자 질의 원문(선택, LLM/MCP 경유 호출용). 질의-검색 연관성 분석을 위해 이력(history)의 request_detail에 함께 적재된다."
+    },
+    "is_skills": {
+     "type": "boolean",
+     "default": false,
+     "description": "우리 서비스 스킬 경유 호출 여부(선택, MCP 경유 호출용). 스킬에서 호출하면 true, 그 외(MCP 연동 일반 호출·직접 호출)는 false(기본). 이력(history)의 is_skills 로 적재된다."
+    },
+    "skill_desc": {
+     "type": "object",
+     "description": "스킬 경유 호출일 때 실행 중인 스킬 정보(선택, JSON 객체, MCP 경유 호출용). 스킬 지침에 적힌 값을 그대로 받는다. 스킬 경유가 아니면 보내지 않는다(null). 이력(history)의 skill_desc 로 적재된다."
+    },
+    "response_format": {
+     "type": "string",
+     "enum": [
+      "json",
+      "download_url"
+     ],
+     "default": "json",
+     "description": "응답 데이터 전달 방식 - `json`: data 필드에 직접 포함(기본) - `download_url`: 데이터를 파일로 GitHub 저장소에 올리고 응답의 download에 다운로드 메타데이터(주소·sha256·크기)만 담는다(LLM/스킬 경유 대용량 조회용) - `download_url`은 DaaS(data) 키 전용 - SaaS 키 요청 시 403"
+    }
+   },
+   "required": [
+    "keywords",
+    "gl"
+   ],
+   "cost": {
+    "*": {
+     "input": 1,
+     "output": 0,
+     "output_unit": "출력 과금(키워드 1개 기준)"
+    }
+   },
+   "cost_by": null
   },
   "/path_finder": {
    "method": "POST",
@@ -329,13 +471,31 @@
     "limit": {
      "type": "integer",
      "default": 300,
-     "minimum": 1.0,
-     "maximum": 1000.0,
+     "minimum": 1,
+     "maximum": 1000,
      "description": "경로 수 제한"
     },
     "user_query": {
      "type": "string",
      "description": "이 요청을 유발한 사용자 질의 원문(선택, LLM/MCP 경유 호출용). 질의-검색 연관성 분석을 위해 이력(history)의 request_detail에 함께 적재된다."
+    },
+    "is_skills": {
+     "type": "boolean",
+     "default": false,
+     "description": "우리 서비스 스킬 경유 호출 여부(선택, MCP 경유 호출용). 스킬에서 호출하면 true, 그 외(MCP 연동 일반 호출·직접 호출)는 false(기본). 이력(history)의 is_skills 로 적재된다."
+    },
+    "skill_desc": {
+     "type": "object",
+     "description": "스킬 경유 호출일 때 실행 중인 스킬 정보(선택, JSON 객체, MCP 경유 호출용). 스킬 지침에 적힌 값을 그대로 받는다. 스킬 경유가 아니면 보내지 않는다(null). 이력(history)의 skill_desc 로 적재된다."
+    },
+    "response_format": {
+     "type": "string",
+     "enum": [
+      "json",
+      "download_url"
+     ],
+     "default": "json",
+     "description": "응답 데이터 전달 방식 - `json`: data 필드에 직접 포함(기본) - `download_url`: 데이터를 파일로 GitHub 저장소에 올리고 응답의 download에 다운로드 메타데이터(주소·sha256·크기)만 담는다(LLM/스킬 경유 대용량 조회용)"
     }
    },
    "required": [
@@ -386,9 +546,27 @@
     "limit": {
      "type": "integer",
      "default": 300,
-     "minimum": 1.0,
-     "maximum": 1000.0,
+     "minimum": 1,
+     "maximum": 1000,
      "description": "경로 수 제한"
+    },
+    "response_format": {
+     "type": "string",
+     "enum": [
+      "json",
+      "download_url"
+     ],
+     "default": "json",
+     "description": "응답 데이터 전달 방식 - `json`: data 필드에 직접 포함(기본) - `download_url`: 데이터를 파일로 GitHub 저장소에 올리고 응답의 download에 다운로드 메타데이터(주소·sha256·크기)만 담는다(LLM/스킬 경유 대용량 조회용)"
+    },
+    "is_skills": {
+     "type": "boolean",
+     "default": false,
+     "description": "우리 서비스 스킬 경유 호출 여부(선택, MCP 경유 호출용). 스킬에서 호출하면 true, 그 외(MCP 연동 일반 호출·직접 호출)는 false(기본). 이력(history)의 is_skills 로 적재된다."
+    },
+    "skill_desc": {
+     "type": "object",
+     "description": "스킬 경유 호출일 때 실행 중인 스킬 정보(선택, JSON 객체, MCP 경유 호출용). 스킬 지침에 적힌 값을 그대로 받는다. 스킬 경유가 아니면 보내지 않는다(null). 이력(history)의 skill_desc 로 적재된다."
     }
    },
    "required": [
@@ -464,6 +642,24 @@
     "user_query": {
      "type": "string",
      "description": "이 요청을 유발한 사용자 질의 원문(선택, LLM/MCP 경유 호출용). 질의-검색 연관성 분석을 위해 이력(history)의 request_detail에 함께 적재된다."
+    },
+    "is_skills": {
+     "type": "boolean",
+     "default": false,
+     "description": "우리 서비스 스킬 경유 호출 여부(선택, MCP 경유 호출용). 스킬에서 호출하면 true, 그 외(MCP 연동 일반 호출·직접 호출)는 false(기본). 이력(history)의 is_skills 로 적재된다."
+    },
+    "skill_desc": {
+     "type": "object",
+     "description": "스킬 경유 호출일 때 실행 중인 스킬 정보(선택, JSON 객체, MCP 경유 호출용). 스킬 지침에 적힌 값을 그대로 받는다. 스킬 경유가 아니면 보내지 않는다(null). 이력(history)의 skill_desc 로 적재된다."
+    },
+    "response_format": {
+     "type": "string",
+     "enum": [
+      "json",
+      "download_url"
+     ],
+     "default": "json",
+     "description": "응답 데이터 전달 방식 - `json`: data 필드에 직접 포함(기본) - `download_url`: 데이터를 파일로 GitHub 저장소에 올리고 응답의 download에 다운로드 메타데이터(주소·sha256·크기)만 담는다(LLM/스킬 경유 대용량 조회용)"
     }
    },
    "required": [
@@ -502,15 +698,15 @@
     "period_days": {
      "type": "integer",
      "default": 14,
-     "minimum": 1.0,
-     "maximum": 365.0,
+     "minimum": 1,
+     "maximum": 365,
      "description": "조회 기간(일). 최신 N일의 이슈 인덱스를 검색. 기본 14일(2주), 최대 365일"
     },
     "limit": {
      "type": "integer",
      "default": 1000,
-     "minimum": 1.0,
-     "maximum": 10000.0,
+     "minimum": 1,
+     "maximum": 10000,
      "description": "반환 이슈 항목 수. 기본 1,000개, 최대 10,000개"
     },
     "sort": {
@@ -543,6 +739,24 @@
     "user_query": {
      "type": "string",
      "description": "이 요청을 유발한 사용자 질의 원문(선택, LLM/MCP 경유 호출용). 질의-검색 연관성 분석을 위해 이력(history)의 request_detail에 함께 적재된다."
+    },
+    "is_skills": {
+     "type": "boolean",
+     "default": false,
+     "description": "우리 서비스 스킬 경유 호출 여부(선택, MCP 경유 호출용). 스킬에서 호출하면 true, 그 외(MCP 연동 일반 호출·직접 호출)는 false(기본). 이력(history)의 is_skills 로 적재된다."
+    },
+    "skill_desc": {
+     "type": "object",
+     "description": "스킬 경유 호출일 때 실행 중인 스킬 정보(선택, JSON 객체, MCP 경유 호출용). 스킬 지침에 적힌 값을 그대로 받는다. 스킬 경유가 아니면 보내지 않는다(null). 이력(history)의 skill_desc 로 적재된다."
+    },
+    "response_format": {
+     "type": "string",
+     "enum": [
+      "json",
+      "download_url"
+     ],
+     "default": "json",
+     "description": "응답 데이터 전달 방식 - `json`: data 필드에 직접 포함(기본) - `download_url`: 데이터를 파일로 GitHub 저장소에 올리고 응답의 download에 다운로드 메타데이터(주소·sha256·크기)만 담는다(LLM/스킬 경유 대용량 조회용)"
     }
    },
    "required": [

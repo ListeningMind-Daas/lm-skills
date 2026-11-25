@@ -20,9 +20,10 @@
         --ledger ledger.jsonl --raw-dir raw --queried-at 2026-09-28 [--tools-json tools.json] [--rules '{"썬":"선"}'] \\
         [--per-call-cap 1000] [--market kr|auto]
     python3 lm_tools.py summary ledger.jsonl -o usage.md --period 2026-09
+    python3 lm_tools.py host [--expect <호스트>]                             # 키를 보낼 호스트(네트워크 없음)
 
-실제 연결은 파이썬에서 `make_runtime_from_env()`로 만든다 — 주소는 `LM_API_BASE`, 키는
-`LM_API_KEY` 환경변수에서만 읽는다. `sync`(`--check-lock` 제외) 말고는 네트워크를 쓰지 않는다(API 호출 0 · 크레딧 0).
+실제 연결은 파이썬에서 `make_runtime_from_env(..., expect_host=<호스트>)`로 만든다 — 주소는 `LM_API_BASE`, 키는
+`LM_API_KEY` 환경변수에서만 읽는다. https 주소만 받고, `expect_host`와 호스트가 다르면 연결하지 않는다. `sync`(`--check-lock` 제외) 말고는 네트워크를 쓰지 않는다(API 호출 0 · 크레딧 0).
 `sync`는 명세 문서만 읽는다 — 데이터 엔드포인트를 부르지 않으므로 크레딧을 쓰지 않는다.
 """
 import argparse, json, math, os, pathlib, re, sys, time
@@ -451,6 +452,11 @@ def _billed_inputs(tool, args, body):
     """과금된 입력 수 — 응답의 request_detail이 있으면 그것(서버가 받은 요청), 없으면 호출 인자.
     dry-run 픽스처가 다른 요청으로 만든 응답이어도 결정식 대조가 호출 순서에 기대지 않게 한다."""
     rd = (body or {}).get("request_detail") if isinstance(body, dict) else None
+    if tool.pol.get("billed_inputs") == "cost_detail" and isinstance(body, dict):
+        # 데이터가 있는 키워드만 과금하는 엔드포인트(월별 검색량 · v1.0.20) — 서버가 적은 과금 대상 수를 쓴다
+        n = (body.get("cost_detail") or {}).get("input_count")
+        if isinstance(n, int):
+            return n
     if tool.input_field == "keywords" and isinstance(rd, dict) and isinstance(rd.get("keywords"), list):
         return len(rd["keywords"])
     return n_inputs(tool, args)
@@ -734,16 +740,38 @@ def annotate_expansion(tool, body, args):
 
 
 # ── 전송 ─────────────────────────────────────────────────────────────────
-class HttpTransport:
-    """실제 호출. 주소·키는 환경변수에서만 읽는다 — 코드·저장소·로그에 남기지 않는다."""
+def api_host(base=None):
+    """키를 보낼 주소 → (호스트, 주소를 읽은 곳). https 가 아니면 RuntimeError — 네트워크를 쓰지 않는다."""
+    where = "인자" if base else "환경변수 LM_API_BASE"
+    base = (base or os.environ.get("LM_API_BASE") or "").strip().rstrip("/")
+    if not base:
+        raise RuntimeError("LM_API_BASE가 없다 — 저장소 README가 링크한 공개 API 문서의 주소를 넣을 것")
+    u = urllib.parse.urlparse(base)
+    if u.scheme != "https" or not u.hostname:
+        raise RuntimeError(f"{where}가 https 주소가 아니다 — 키가 암호화 없이 전송될 수 있어 연결하지 않는다")
+    return u.hostname.lower(), where
 
-    def __init__(self, base=None, key=None, timeout=60, registry=None):
-        self.base = (base or os.environ.get("LM_API_BASE") or "").rstrip("/")
+
+class HttpTransport:
+    """실제 호출. 주소·키는 환경변수에서만 읽는다 — 코드·저장소·로그에 남기지 않는다.
+
+    - https 주소만 받는다(키가 암호화 없이 나가지 않게).
+    - `expect_host`를 주면 주소의 호스트가 그 값과 같을 때만 만든다 — 셸에 다른 서버 주소가 남아 있어도 키가 그쪽으로 가지 않는다.
+    - 없으면 키를 보낼 호스트를 표준 오류에 한 번 알린다. 실연결 전에 `lm_tools.py host`로 확인받고 `expect_host`로 고정한다.
+    """
+
+    def __init__(self, base=None, key=None, timeout=60, registry=None, expect_host=None, announce=True):
+        self.host, where = api_host(base)
+        self.base = (base or os.environ.get("LM_API_BASE") or "").strip().rstrip("/")
         self.key = key or os.environ.get("LM_API_KEY") or ""
-        if not self.base:
-            raise RuntimeError("LM_API_BASE가 없다 — 저장소 README가 링크한 공개 API 문서의 주소를 넣을 것")
         if not self.key:
             raise RuntimeError("LM_API_KEY가 없다 — 발급받은 키를 환경변수로 넣을 것")
+        if expect_host and self.host != str(expect_host).strip().lower():
+            raise RuntimeError(f"키를 보낼 호스트가 예상과 다르다 — {where}의 호스트 {self.host} · 예상 {expect_host}. "
+                               "연결하지 않았다. 어느 서버를 쓸지 사용자에게 확인받는다")
+        if not expect_host and announce:
+            print(f"키를 보낼 호스트: {self.host} ({where}) — 맞는지 사용자에게 확인하고 expect_host 로 고정할 것",
+                  file=sys.stderr)
         self.timeout, self.reg, self.calls = timeout, registry or REG, 0
 
     def post(self, tool, payload):
@@ -1001,10 +1029,11 @@ class Runtime:
         actual = cd.get("total_cost")
         fcost = formula_cost(t, args, body)
         if t.annotate == "keyword_info":
-            body = annotate_keyword_info(body, args["data_type"], self.queried_at, self.base_gate,
-                                         self.rules, args["keywords"])
+            data_type = args.get("data_type", "all")      # 월별 검색량 도구는 data_type이 없고 응답은 시계열이다
+            body = annotate_keyword_info(body, data_type, self.queried_at, self.base_gate,
+                                         self.rules, args.get("keywords") or [args["keyword"]])
             returned, truncated = len(_data(body) or []), False
-            if args["data_type"] == "ads_metrics":        # 요청 키워드 + 함께 돌아온 변형 행
+            if data_type == "ads_metrics":        # 요청 키워드 + 함께 돌아온 변형 행
                 self.screened |= {canon(k, self.rules) for k in args["keywords"]}
                 self.screened |= {r["canonical"] for r in (_data(body) or []) if isinstance(r, dict)}
         else:
@@ -1027,8 +1056,9 @@ class Runtime:
         return body
 
 
-def make_runtime_from_env(budget, ledger_path, **kw):
-    return Runtime(HttpTransport(registry=kw.get("registry")), budget, ledger_path, **kw)
+def make_runtime_from_env(budget, ledger_path, expect_host=None, **kw):
+    """실연결 런타임. `expect_host`(예: `lm_tools.py host`로 확인한 호스트)를 주면 주소가 다를 때 만들지 않는다."""
+    return Runtime(HttpTransport(registry=kw.get("registry"), expect_host=expect_host), budget, ledger_path, **kw)
 
 
 # ── 원장 요약 ─────────────────────────────────────────────────────────────
@@ -1190,6 +1220,8 @@ def main():
     y.add_argument("--write", action="store_true"); y.add_argument("--synced-at")
     y.add_argument("--check-lock", action="store_true",
                    help="네트워크 없이 잠금 파일만 점검(모양·필수 인자·정수 경계·단가·판단 파일과의 짝) — 0 정상 · 1 문제")
+    h = sub.add_parser("host", help="키를 보낼 호스트와 읽은 곳을 보여 준다(네트워크 없음 · 키를 출력하지 않음)")
+    h.add_argument("--expect", help="이 호스트와 다르면 종료 코드 1")
     lst = sub.add_parser("list", help="도구 목록 · 단가 · 검토 상태")
     lst.add_argument("--lock", default=str(LOCK_PATH)); lst.add_argument("--policy", default=str(POLICY_PATH))
     s = sub.add_parser("schema"); s.add_argument("--format", choices=["claude", "openai"], required=True)
@@ -1214,6 +1246,18 @@ def main():
     m.add_argument("--period", default=date.today().strftime("%Y-%m"))
     a = ap.parse_args()
 
+    if a.cmd == "host":
+        try:
+            host, where = api_host()
+        except RuntimeError as e:
+            print(f"✗ {e}", file=sys.stderr)
+            return 1
+        print(f"키를 보낼 호스트: {host} ({where}) · 키: {'있음' if os.environ.get('LM_API_KEY') else '없음'}")
+        if a.expect and host != a.expect.strip().lower():
+            print(f"✗ 예상 호스트 {a.expect} 와 다르다 — 연결하지 않는다. 어느 서버를 쓸지 사용자에게 확인받는다", file=sys.stderr)
+            return 1
+        print("실연결 전에 이 호스트가 맞는지 사용자에게 확인받고, make_runtime_from_env(..., expect_host=\"" + host + "\") 로 고정한다")
+        return 0
     if a.cmd == "sync" and a.check_lock:
         lock_p = pathlib.Path(a.lock)
         if not lock_p.is_file():

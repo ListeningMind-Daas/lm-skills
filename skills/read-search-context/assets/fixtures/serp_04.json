@@ -1,0 +1,38 @@
+{
+ "result": "OK",
+ "collected_at": "2026-10-20T03:00:00Z",
+ "cost_detail": {
+  "total_cost": 30
+ },
+ "used_credits": 12100,
+ "data": [
+  {
+   "sequence": 1,
+   "type": "ai_overview",
+   "text_blocks": [
+    {
+     "type": "paragraph",
+     "snippet": "릴렉스체어는 등받이가 높고 팔걸이가 있는 캠핑 의자다."
+    }
+   ]
+  },
+  {
+   "sequence": 2,
+   "type": "organic_results",
+   "position": 1,
+   "site_name": "예시 쇼핑몰",
+   "title": "릴렉스체어 상품 모음",
+   "url": "https://example.com/1",
+   "snippet": "브랜드별 가격 비교"
+  },
+  {
+   "sequence": 3,
+   "type": "organic_results",
+   "position": 2,
+   "site_name": "예시 블로그",
+   "title": "릴렉스체어 비교",
+   "url": "https://example.com/2",
+   "snippet": "무게와 수납 길이 비교"
+  }
+ ]
+}

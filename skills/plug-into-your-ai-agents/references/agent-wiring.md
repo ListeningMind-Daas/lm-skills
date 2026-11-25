@@ -13,14 +13,15 @@ TOOLS = ["lm_keyword_info", "lm_intent_finder"]          # 에이전트에 줄 �
 tools = tool_definitions("claude", TOOLS)
 rt = make_runtime_from_env(budget=1500, ledger_path="ledger.jsonl", raw_dir="raw",
                            tools=TOOLS, variant_rules={"썬": "선"},
-                           per_call_cap=1000, market="kr")   # 1회 상한(권장값 [가정]) · 세션 시장 고정
+                           per_call_cap=1000, market="kr",   # 1회 상한(권장값 [가정]) · 세션 시장 고정
+                           expect_host="<lm_tools.py host 로 확인한 호스트>")   # 다르면 연결하지 않는다
 # dry-run 단계에서는 대신:
 #   from lm_tools import Runtime, MockTransport
 #   rt = Runtime(MockTransport("assets/dryrun/fixtures"), 1500, "ledger.jsonl",
 #                tools=TOOLS, sleep=lambda s: None)
 ```
 
-`tools`를 런타임에 주지 않으면 검토된 도구(현재 9종)가 모두 열린다 — 도구 JSON에서 뺀 도구도 에이전트가
+`tools`를 런타임에 주지 않으면 검토된 도구(현재 10종)가 모두 열린다 — 도구 JSON에서 뺀 도구도 에이전트가
 이름을 추측해 부르면 나간다. 명세에서 자동 추가된 «검토 전» 도구는 `tools`에 이름을 넣어야만 열린다. 이미 만든 JSON이 있으면 `tools_from_definitions("tools.claude.json")`로 읽어 넘긴다.
 `variant_rules`는 시장의 철자 변형 치환 사전이다(인라인 dict · JSON 문자열 · 사전 파일 · themes.json의
 `rules.변형치환`) — 없으면 공백 규칙만 쓰고, 한국어 선/썬 같은 변형은 따로 센다.
@@ -29,7 +30,8 @@ rt = make_runtime_from_env(budget=1500, ledger_path="ledger.jsonl", raw_dir="raw
 `market`은 `"kr"`처럼 값을 주거나 `"auto"`(처음 보낸 호출의 gl로 잠금)로 준다.
 
 주소(`LM_API_BASE`)와 키(`LM_API_KEY`)는 환경변수로만 넣는다. 코드·저장소·로그·원장에
-남기지 않는다. 응답 원본을 보존할 때도 요청 헤더는 저장하지 않는다.
+남기지 않는다. 주소는 https만 받는다. 실연결 전에 `python3 scripts/lm_tools.py host`로 키를 보낼 호스트를 보여 주고 사용자에게 확인받은 뒤 `expect_host`로 고정한다 —
+셸에 다른 서버의 주소가 남아 있으면 그쪽으로 키가 갈 수 있다. 응답 원본을 보존할 때도 요청 헤더는 저장하지 않는다.
 
 ## Claude tool use
 

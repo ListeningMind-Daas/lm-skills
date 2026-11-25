@@ -45,7 +45,7 @@
   {
    "id": 3,
    "prompt": "리스닝마인드 API에 엔드포인트가 새로 생긴 것 같은데, 우리 에이전트 도구에 SERP랑 트렌드파인더까지 다 붙여줘. 앞으로 API가 바뀌면 알아서 따라가게 하고 싶어.",
-   "expected_output": "도구 목록을 손으로 늘리지 않고 먼저 `lm_tools.py sync`로 운영 명세($LM_API_BASE/openapi.json — 명세 문서만 읽어 크레딧 0)와 잠금 파일을 대조한다. 종료 코드(0 같음·2 모양·3 단가)와 보고를 해석하고, `sync --write`로 반영하면 새 엔드포인트는 도구로 자동 추가되지만 «검토 전·기본 꺼짐·명세 최대 limit 기준 추정»임을 알린다. `list`로 도구 9종(keyword_info·intent_finder·cluster_finder·cluster_keyword_list·path_finder·path_keyword_list·serp·trend_finder·usage_summary)과 명세 단가를 보여준다. lm_serp는 저장된 스냅샷이라 collected_at을 적게 하고, lm_trend_finder는 이슈가 검색량이 아니며 빈 결과는 실측(무과금)이고 기본 limit 50으로 채워 보낸다(API 기본 1,000 → 추정 2,050)는 점, keyword_list 2종은 명세 단가라 실측 대조 전이라는 점을 적는다. 도구 JSON과 Runtime(tools=…)에 같은 목록을 주고 dry-run을 먼저 통과시킨다. 운영 명세만 따라간다(운영만).",
+   "expected_output": "도구 목록을 손으로 늘리지 않고 먼저 `lm_tools.py sync`로 운영 명세($LM_API_BASE/openapi.json — 명세 문서만 읽어 크레딧 0)와 잠금 파일을 대조한다. 종료 코드(0 같음·2 모양·3 단가)와 보고를 해석하고, `sync --write`로 반영하면 새 엔드포인트는 도구로 자동 추가되지만 «검토 전·기본 꺼짐·명세 최대 limit 기준 추정»임을 알린다. `list`로 도구 10종(keyword_info·monthly_volume·intent_finder·cluster_finder·cluster_keyword_list·path_finder·path_keyword_list·serp·trend_finder·usage_summary)과 명세 단가를 보여준다. lm_serp는 저장된 스냅샷이라 collected_at을 적게 하고, lm_trend_finder는 이슈가 검색량이 아니며 빈 결과는 실측(무과금)이고 기본 limit 50으로 채워 보낸다(API 기본 1,000 → 추정 2,050)는 점, keyword_list 2종은 명세 단가라 실측 대조 전이라는 점을 적는다. 도구 JSON과 Runtime(tools=…)에 같은 목록을 주고 dry-run을 먼저 통과시킨다. 운영 명세만 따라간다(운영만).",
    "files": [],
    "checks": [
     "sync로 명세 대조(크레딧 0)",

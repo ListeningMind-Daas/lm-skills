@@ -3,6 +3,19 @@
 판 번호의 정본은 SKILL.md frontmatter `metadata.version` 이다. 새 판을 낼 때 두 곳을 같이 고친다.
 결함은 무엇이 어떻게 틀렸고 어떻게 고쳤는지, 재발을 막는 검사와 함께 적는다 — 실데이터 실행에서 관측한 수치(검색량 · 건수 · 비율 · 순위)는 적지 않는다.
 
+## v0.4.3 (2026-11-25 · lm-skills 1.9.0)
+
+운영 명세에 새로 들어온 월별 검색량 엔드포인트를 도구로 켜고, 키를 보낼 주소를 검사한다.
+
+- 새 도구 `lm_keyword_info_monthly_volume` (`POST /keyword_info/monthly_volume`) — 키워드 1~1,000개(`keywords` 배열)의 월별 시계열만 받는다. 기간 지정(`date_from`·`date_to` · `YYYY-MM` · 최대 48개월)은 이 도구에만 있다.
+  과금은 **반환된 행 1개당 1**이다 — 데이터가 없는 키워드는 과금되지 않고, 요청하지 않은 표기 변형 행이 함께 오면 그 행도 과금된다. 결정식 대조는 응답의 `cost_detail.input_count`(과금된 행 수)를 쓰고(`billed_inputs`), 호출 전 추정은 요청 키워드 수 기준이라 변형 행만큼 실제가 더 클 수 있다
+- `is_skills` · `skill_desc` · `response_format`은 잠금 파일에 담되 도구에는 노출하지 않는다(`hidden_params`)
+- 키를 보낼 주소 검사가 없었다 — 셸에 남은 `LM_API_BASE`를 확인 없이 썼고 https가 아닌 주소도 받았다(같은 키트의 `read-search-context`를 만들다 사용자가 입력한 주소 대신 셸의 다른 서버 주소가 쓰인 것을 보고 점검했다).
+  `HttpTransport` · `make_runtime_from_env`는 https 주소만 받고, `expect_host`를 주면 호스트가 다를 때 전송을 만들지 않는다. `expect_host` 없이 만들면 키를 보낼 호스트를 표준 오류에 한 번 알린다. 인자를 더했을 뿐 기존 호출은 그대로 돈다
+- `lm_tools.py host [--expect <호스트>]` 추가 — 키를 보낼 호스트와 읽은 곳을 보여 준다(네트워크 없음 · 키를 출력하지 않음)
+- STEP 6 · 연결 안내에 «호스트를 사용자에게 확인받고 `expect_host`로 고정»을 넣었다 · `selftest_tools.py`에 월별 검색량 도구 · https 거부 · 호스트 불일치 · `host` 명령 시험을 더했다
+- 나머지 엔드포인트의 인자·필수값·단가는 바뀌지 않았다
+
 ## v0.4.2 (2026-11-23 · lm-skills 1.8.0)
 
 - 계약 v1.3 사본 — `ads_info` 금지를 풀었다. 시계열만 필요하면 `ads_info`를 쓸 수 있고, 단가는 첫 호출 `cost_detail`로 확인한다(명세 1/키워드 · 운영 환경에서도 1로 확인).

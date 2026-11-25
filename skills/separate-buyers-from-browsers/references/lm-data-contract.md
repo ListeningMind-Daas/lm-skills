@@ -1,7 +1,7 @@
 ---
 contract: lm-data-contract
-version: 1.3
-updated: 2026-11-23
+version: 1.4
+updated: 2026-11-25
 scope: ListeningMind DaaS API를 쓰는 모든 스킬
 ---
 
@@ -28,6 +28,7 @@ scope: ListeningMind DaaS API를 쓰는 모든 스킬
 | `intent_finder` | `30 × 입력 + 2 × 반환` | **키워드 문자열만** |
 | `cluster_finder` | `150 + 고유 키워드(노드) × 50` — 관계 수가 아니다 | 군집·엔티티·관계. `limit`은 **관계 행 수** 상한(노드 수가 아님) |
 | `path_finder` | `50 + 경로 내 고유 키워드 × 40` | 세션 인접 경로. `limit`은 **경로 수** 상한 — 과금 단위(고유 키워드)를 묶지 못한다 |
+| `keyword_info/monthly_volume` | `1 × 반환 행` — 요청 키워드 수가 아니다(아래) | 월별 검색량만(`monthly_volume` 48개월 · 기간 지정 가능) |
 | `serp` | `30 × 키워드` | 검색결과 화면 블록 |
 | `trend_finder` | `50 × 결과가 있는 호출 + 2 × 반환 이슈` — 빈 결과 호출은 0 (2026-09-29 개발 환경 실측 1건 · 환경마다 확인) | 시드 주변 급부상 이슈(키워드·이슈 점수·요약·출처). **검색량은 없다** · 빈 결과는 실측(기간을 넓혀 재조회) |
 | `cluster_finder/keyword_list` | `30 + 2 × 반환 키워드` — 명세값 · 실측 대조 전 `[가정]` | 관계망 키워드 목록만(군집 구조 없음) · 본 호출 전 규모 확인용 |
@@ -63,6 +64,17 @@ scope: ListeningMind DaaS API를 쓰는 모든 스킬
 정한다. 운영 환경에서도 `ads_info`가 키워드당 1로 청구됐다 — 판정 대상을 `ads_info`로 넓혀도 `all` 2단 조회보다 싸다.
 
 > ⚠️ 배포 환경마다 단가가 다를 수 있다. **고객에게 크레딧을 안내하기 전에 해당 환경에서 확인**하고, 위 규칙을 다시 계산한다.
+
+### `keyword_info/monthly_volume` — 월별 검색량만 (v1.4 추가)
+
+시계열**만** 필요하면 `keyword_info`(`ads_info` · `all`) 대신 이 엔드포인트를 쓸 수 있다. 기간을 지정할 수 있는 것은 이 엔드포인트뿐이다. DaaS(data) 키 전용이다.
+
+- 본문: `keywords`(배열 1~1,000개) · `gl` · 선택 `date_from` · `date_to`(`YYYY-MM` · 해당 월 포함 · 최대 48개월). 둘 다 생략하면 제공 범위 전체
+- 응답 `data` = `[{keyword, monthly_volume: [{month, gg, nv, total}, …]}]` — `/keyword_info`의 같은 항목과 값이 같다(명세 설명). `ads_metrics`는 없다
+- 과금: **반환된 행 1개당 1** (`cost_detail.input_count` = 과금된 행 수). 데이터가 없는 키워드는 빠지고 과금되지 않으며,
+  **요청하지 않은 표기 변형 행도 과금된다** — `keyword_info`(요청 키워드 수 과금)와 반대다. 견적은 요청 키워드 수로 잡되 실제 소진은 `cost_detail.total_cost`로 적는다
+- 행 순서는 요청 순서와 다를 수 있다 — `keyword`로 고른다. 변형 행은 T5대로 묶고 더하지 않는다. 요청하지 않은 변형 행이 공유 스크립트의 집계에 섞이지 않게 요청한 키워드 목록으로 거른다
+- 시계열 함정(T1 기준월 · T2 마지막 달 · T3 전년 동기 · T4 기저 · T6 결측)은 `ads_info` · `all`로 받은 시계열과 똑같이 적용된다
 
 ### `keyword_info` 응답과 과금의 대응 (2026-09-28 실측)
 
