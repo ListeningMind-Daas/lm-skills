@@ -1,0 +1,19 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keywords": [
+   "여름 선크림"
+  ],
+  "gl": "kr",
+  "limit": 50
+ },
+ "cost_detail": {
+  "total_cost": 38
+ },
+ "data": [
+  "여름 선크림",
+  "등산 선크림",
+  "스키장 선크림",
+  "겨울 선크림"
+ ]
+}

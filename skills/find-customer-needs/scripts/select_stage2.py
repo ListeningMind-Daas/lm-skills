@@ -10,8 +10,8 @@ M은 규칙으로 정한다 — 손으로 고르면 재현되지 않는다. 그�
            Pain 항목 × 브랜드 범위마다 볼륨 순 상위 --pain-per-item (기본 5)
   크레딧 = 10 × (B + M_main + M_pain)   (keyword_info · data_type=all)
 
-Pain은 긴 꼬리에 있어 12,000 게이트만 쓰면 시계열을 하나도 못 받는다(2026-09-28 제습기 평가: Pain 항목 대부분
-«시계열 없음»). 작은 Pain 그룹은 voc_axes.py가 **항목 단위로 합산한 뒤** 게이트를 걸어 추세를 낸다.
+Pain은 긴 꼬리에 있어 12,000 게이트만 쓰면 시계열을 거의 못 받는다(제습기 평가에서
+Pain 항목이 «시계열 없음»으로 남았다). 작은 Pain 그룹은 voc_axes.py가 **항목 단위로 합산한 뒤** 게이트를 걸어 추세를 낸다.
 
     python3 select_stage2.py --universe keyword_universe.csv --axes axes.json --category 전동칫솔 -o pool_M.json
 """

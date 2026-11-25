@@ -1,0 +1,59 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keyword": "고소한 원두 추천",
+  "gl": "kr",
+  "num": 20,
+  "device": "mobile"
+ },
+ "cost_detail": {
+  "input_count": 1,
+  "total_cost": 30
+ },
+ "collected_at": "2026-11-10T03:00:00.000Z",
+ "_note": "합성 픽스처 — 실측 SERP 블록 키 구조(type · text_blocks · references)를 따르고 문구는 지어냈다",
+ "data": [
+  {
+   "sequence": 1,
+   "type": "ai_overview",
+   "text_blocks": [
+    {
+     "type": "paragraph",
+     "snippet": "견과류 같은 고소함과 묵직한 바디감, 쓴맛이 덜한 원두가 인기입니다. 산미가 없고 고소한 원두는 라떼에도 편안하게 어울립니다."
+    }
+   ],
+   "references": [
+    {
+     "title": "고소한 원두 정리",
+     "link": "https://example.com/nutty"
+    }
+   ]
+  },
+  {
+   "sequence": 2,
+   "type": "people_also_ask_for",
+   "text_blocks": [
+    {
+     "type": "question",
+     "snippet": "고소한 원두는 어떤 맛인가요?"
+    }
+   ],
+   "references": [
+    {
+     "title": "원두 가이드",
+     "link": "https://example.com/guide"
+    }
+   ]
+  },
+  {
+   "sequence": 3,
+   "type": "video_results",
+   "items": [
+    {
+     "title": "달콤한 원두 브이로그",
+     "link": "https://example.com/v"
+    }
+   ]
+  }
+ ]
+}

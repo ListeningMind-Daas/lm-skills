@@ -4,7 +4,7 @@
 입력은 build_universe.py가 만든 유니버스 CSV와 의도 사전(themes.json 스키마 + tier + category)이다.
 
   1. 같은 검색의 중복 제거(계약 T5 ①) — 응답에 요청하지 않은 어순·동의어 변형이 오고, 그중 일부는
-     볼륨·CPC·경쟁도가 완전히 같다(US 실측: 여분 행이 볼륨의 33.5%). 유니버스의 `dup_of`(없으면
+     볼륨·CPC·경쟁도가 완전히 같다(US 실데이터에서 여분 행이 볼륨의 큰 몫이었다). 유니버스의 `dup_of`(없으면
      series_dedup.dedup_map으로 다시 계산)로 한 번만 센다. canonical 그룹으로는 잡히지 않는다.
   2. 분류 — 클래스 패턴을 이 스크립트가 다시 평가한다(buyer_match.py). ASCII 마커는 토큰 단위라
      `best`⊂`bestbuy`, `or`⊂`for dyson` 같은 오탐이 없다. 한글 마커는 canonical 부분일치.
@@ -85,7 +85,7 @@ def main():
         sys.exit(f"tier가 없거나 잘못된 클래스: {bad} — 허용값 {TIERS}")
     bmark = brand_marker(cfg.get("brands", []), subs)
     # 브랜드 사전에 판매 채널명이 들어가면(px·올리브영·쿠팡) 채널 지명 검색이 «브랜드 포함»으로 가고, 채널 마커와 함께 걸린
-    # 검색은 거래 의도이면서 브랜드 행이 되어 «논브랜드 안 거래 의도»에서 빠진다(2026-09-30 선크림: map-your-market 사전의 px)
+    # 검색은 거래 의도이면서 브랜드 행이 되어 «논브랜드 안 거래 의도»에서 빠진다(선크림 예시 실행: map-your-market 사전의 px)
     chan_brands = []
     for b in cfg.get("brands", []):
         bc, bb = canon_bounds(b, subs)

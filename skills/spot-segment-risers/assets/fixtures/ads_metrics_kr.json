@@ -1,0 +1,140 @@
+{
+ "result": "OK",
+ "source": "listeningmind-data-api",
+ "request_at": "2026-10-15T00:00:00.000Z",
+ "request_detail": {
+  "gl": "kr",
+  "data_type": "ads_metrics"
+ },
+ "cost_detail": {
+  "total_cost": 14
+ },
+ "data": [
+  {
+   "keyword": "선크림",
+   "ads_metrics": {
+    "volume_avg": 41000,
+    "volume_total": 492000,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "썬크림",
+   "ads_metrics": {
+    "volume_avg": 41000,
+    "volume_total": 492000,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "톤업 선크림",
+   "ads_metrics": {
+    "volume_avg": 12000,
+    "volume_total": 144000,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "남자 선크림",
+   "ads_metrics": {
+    "volume_avg": 11000,
+    "volume_total": 132000,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "선크림 추천",
+   "ads_metrics": {
+    "volume_avg": 5100,
+    "volume_total": 61200,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "쿠션",
+   "ads_metrics": {
+    "volume_avg": 19000,
+    "volume_total": 228000,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "쿠션 팩트 추천",
+   "ads_metrics": {
+    "volume_avg": 3300,
+    "volume_total": 39600,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "글로우 쿠션",
+   "ads_metrics": {
+    "volume_avg": 2000,
+    "volume_total": 24000,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "마스크 쿠션",
+   "ads_metrics": {
+    "volume_avg": 1100,
+    "volume_total": 13200,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "선스틱 신상",
+   "ads_metrics": {
+    "volume_avg": 3000,
+    "volume_total": 36000,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "무기자차 선크림",
+   "ads_metrics": {
+    "volume_avg": 5200,
+    "volume_total": 62400,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "선쿠션",
+   "ads_metrics": {
+    "volume_avg": 4400,
+    "volume_total": 52800,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "쿨링 선크림",
+   "ads_metrics": {
+    "volume_avg": 4300,
+    "volume_total": 51600,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  },
+  {
+   "keyword": "선크림 바르는 순서",
+   "ads_metrics": {
+    "volume_avg": 400,
+    "volume_total": 4800,
+    "cpc": 300,
+    "competition_index": 50
+   }
+  }
+ ]
+}

@@ -10,14 +10,14 @@
   3. 함정 처리가 실제로 도는가 — 표기변형 대표 1행 · 결측 월 계산 불가 · 마지막 달 제외 ·
      기저 게이트 · 제외 규칙 · 논브랜드 버킷 · 브랜드 합 점유율 합계 1 ·
      표기변형 하한(최댓값)≠상한(합) · 상한에서 순위가 뒤집히는 사전의 rank_flip·경고 (계약 T5)
-  4. v1.2 회귀 (2026-09-28 실측 평가 결함):
+  4. v1.2 회귀 (실데이터 평가 결함):
      P0-1 게이트 밖 메시지 칸을 «0건 [실제 데이터]»로 경고하지 않는다 · 1단 실제 0이면 경고한다
      P1-1 2단 선별이 테마 칸을 예약하고 테마 커버리지를 보고한다
      P1-2 구글 지표 공유 행(오타 별칭 포함)을 하한·월 패널에서 한 번만 센다 · 결측 오타가 yoy를 지우지 않는다
      P1-3 브랜드명 단독 비중 컬럼 · P1-4 테마 정규식이 브랜드+모델 연결부에서 가짜 매칭하지 않는다
      P2-1 점유율 하한·상한을 범위(«~»)로 적지 않는다 · P2-2 review-config가 별칭을 brands에 넣는다
-  5. v1.3 회귀 (2026-09-30 선크림 실측): 구글 지표만 공유하고 네이버 볼륨이 다른 행(네이버 분리 변형)을
-     2단에 따로 넣고, 하한·월 패널에 네이버 볼륨을 더한다(헤라 순위 하한 5위 ↔ 상한 2위 뒤집힘 재현 방지)
+  5. v1.3 회귀 (선크림 예시 실행): 구글 지표만 공유하고 네이버 볼륨이 다른 행(네이버 분리 변형)을
+     2단에 따로 넣고, 하한·월 패널에 네이버 볼륨을 더한다(헤라 순위의 하한·상한 뒤집힘 재현 방지)
 API 호출도 크레딧도 필요 없다.
 
     python3 scripts/selftest_benchmark.py        # 스킬 폴더에서 실행
@@ -121,7 +121,7 @@ def regressions(tmp):
           mrow("호카", 24000, 96000, cpc=0.5, ci=70), mrow("호카 본디", 3000, 9000, cpc=0.6, ci=80),
           mrow("나이키 할인", 1200, 4800, cpc=0.7, ci=90), mrow("러닝화", 30000, 90000, cpc=0.9, ci=99)]
     s1 = [{"keyword": d["keyword"], "ads_metrics": d["ads_metrics"]} for d in s2]
-    s1.append({"keyword": "호카 할인", "ads_metrics": {"volume_total": 258, "gg_volume_total": 0, "nv_volume_total": 258}})
+    s1.append({"keyword": "호카 할인", "ads_metrics": {"volume_total": 250, "gg_volume_total": 0, "nv_volume_total": 250}})
     (tmp / "r_s2.json").write_text(json.dumps({"data": s2}, ensure_ascii=False), encoding="utf-8")
     (tmp / "r_s1.json").write_text(json.dumps({"data": s1}, ensure_ascii=False), encoding="utf-8")
     p = run(HERE / "brand_benchmark.py", "r_s2.json", "--config", "r.json", "--category", "r", "--stage1", "r_s1.json",
@@ -130,8 +130,8 @@ def regressions(tmp):
         return [("regression", "v1.2 회귀 픽스처 실행 실패", (p.stdout + p.stderr)[-300:])]
     md = (tmp / "out_r" / "gap_alert_r.md").read_text(encoding="utf-8")
     if "메시지 공백: «가격·할인»" in md:
-        f.append(("P0-1", "게이트 밖(1단 258건) 메시지 칸을 메시지 공백으로 경고했다", ""))
-    if "게이트 밖(1단 12개월 258건" not in md:
+        f.append(("P0-1", "게이트 밖(1단 250건) 메시지 칸을 메시지 공백으로 경고했다", ""))
+    if "게이트 밖(1단 12개월 250건" not in md:
         f.append(("P0-1", "게이트 밖 칸이 1단 볼륨과 함께 판정 보류로 표시되지 않았다", ""))
     tc = {(r["theme"], r["brand"]): r for r in read(tmp / "out_r" / "theme_coverage_r.csv")}
     if not tc.get(("가격·할인", "호카"), {}).get("cell_status", "").startswith("게이트 밖"):
@@ -189,12 +189,12 @@ def regressions(tmp):
         f.append(("P1-1", "stage2가 테마 커버리지·미반환을 보고하지 않는다", p.stdout[-300:]))
     if "nikep" in picked or "나이키도스" in picked:
         f.append(("P1-2", "구글 공유 행이 2단 대상에 들어갔다", str(picked)))
-    # v1.3 P0 네이버 분리 변형 — 구글만 공유하고 네이버 볼륨이 다른 쌍(헤라 선크림·썬크림 실측 비율)
+    # v1.3 P0 네이버 분리 변형 — 구글만 공유하고 네이버 볼륨이 다른 쌍(합성 값 · 고치기 전에는 하한·상한 순위가 뒤집힌다)
     cfg_n = {"rules": {"변형치환": {}}, "brands": ["헤라", "달바"], "category_terms": ["선크림"],
              "themes": [], "no_match": {"with_brand": "브랜드·제품명", "without_brand": "코어·일반"}}
     (tmp / "n.json").write_text(json.dumps(cfg_n, ensure_ascii=False), encoding="utf-8")
-    n2 = [mrow("헤라 썬크림", 25400, 231480, cpc=0.38, ci=95), mrow("헤라 선크림", 25400, 123840, cpc=0.38, ci=95),
-          mrow("달바 선크림", 30000, 300000, cpc=0.5, ci=90), mrow("선크림", 219000, 338304, cpc=1.0, ci=93)]
+    n2 = [mrow("헤라 썬크림", 20000, 220000, cpc=0.4, ci=95), mrow("헤라 선크림", 20000, 120000, cpc=0.4, ci=95),
+          mrow("달바 선크림", 30000, 300000, cpc=0.5, ci=90), mrow("선크림", 200000, 300000, cpc=1.0, ci=93)]
     n1 = [{"keyword": d["keyword"], "ads_metrics": d["ads_metrics"]} for d in n2]
     (tmp / "n_s1.json").write_text(json.dumps({"data": n1}, ensure_ascii=False), encoding="utf-8")
     (tmp / "n_s2.json").write_text(json.dumps({"data": n2}, ensure_ascii=False), encoding="utf-8")
@@ -208,11 +208,11 @@ def regressions(tmp):
         f.append(("v1.3-P0", "네이버 분리 픽스처 실행 실패", (p.stdout + p.stderr)[-300:]))
     else:
         nb = {r["brand"]: r for r in read(tmp / "out_n" / "bounds_n.csv")}
-        if nb["헤라"]["volume_12m_lo"] != str(25400 + 231480 + 123840) or nb["헤라"]["rank_flip"] != "no":
+        if nb["헤라"]["volume_12m_lo"] != str(20000 + 220000 + 120000) or nb["헤라"]["rank_flip"] != "no":
             f.append(("v1.3-P0", "네이버 분리 변형의 네이버 볼륨이 하한에 빠졌다(순위 뒤집힘 재현)",
                       str({k: nb["헤라"][k] for k in ("volume_12m_lo", "volume_12m_hi", "rank_flip")})))
         nm = next(r for r in read(tmp / "out_n" / "benchmark_n.csv") if r["month"] == "2025-07" and r["brand"] == "헤라")
-        exp = 25400 // 12 + 231480 // 12 + 123840 // 12
+        exp = 20000 // 12 + 220000 // 12 + 120000 // 12
         if nm["volume"] != str(exp):
             f.append(("v1.3-P0", f"월 패널에 네이버 분리 변형의 네이버 볼륨이 더해지지 않았다: {nm['volume']} ≠ {exp}", ""))
     run(HERE / "plan_queries.py", "review-config", "--config", "r.json", "-o", "r_review.json")

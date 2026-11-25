@@ -1,0 +1,43 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keyword": "자동차보험",
+  "gl": "kr",
+  "num": 20,
+  "device": "mobile"
+ },
+ "cost_detail": {
+  "input_count": 1,
+  "total_cost": 30
+ },
+ "collected_at": "2026-11-10T03:00:00.000Z",
+ "_note": "합성 픽스처 — 실측 SERP 블록 키 구조(type · text_blocks · references)를 따르고 문구는 지어냈다",
+ "data": [
+  {
+   "sequence": 1,
+   "type": "ai_overview",
+   "text_blocks": [
+    {
+     "type": "paragraph",
+     "snippet": "자동차보험은 보장 범위와 특약, 운전자 범위에 따라 보험료가 달라집니다. 다이렉트 가입이 대체로 저렴합니다. 갱신 전 여러 보험사를 비교하는 것이 좋습니다."
+    }
+   ],
+   "references": [
+    {
+     "title": "보험 비교",
+     "link": "https://example.com/ins"
+    }
+   ]
+  },
+  {
+   "sequence": 2,
+   "type": "people_also_ask_for",
+   "text_blocks": [
+    {
+     "type": "question",
+     "snippet": "자동차보험 갱신은 언제 하나요?"
+    }
+   ]
+  }
+ ]
+}

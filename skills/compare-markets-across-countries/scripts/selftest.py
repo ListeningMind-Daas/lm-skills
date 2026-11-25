@@ -217,7 +217,7 @@ def main():
             if not 0.05 < yoy < 0.15:   # 픽스처 성장률 10%
                 fails.append(("compare", f"yoy_3m이 픽스처 성장률(약 10%)과 어긋남: {yoy}", ""))
 
-            # ── 2026-09-28 실데이터 평가 회귀 ──
+            # ── v1.2 실데이터 평가 결함 회귀 ──
             # P1-2: 시계열이 같은 변형(cordless vacuums)은 상한에 더하지 않는다 → 하한 = 상한
             uc = g[("us", "cordless_stick")]
             if uc["volume_12m_lo"] != uc["volume_12m_hi"] or ks[("us", "cordless vacuums")]["dup_of"] != "cordless vacuum" \
@@ -271,7 +271,7 @@ def main():
         if "약 2개월" in doc or "약 2개월" in (HERE.parent / "evals" / "evals.json").read_text(encoding="utf-8"):
             fails.append(("SKILL.md", "고정 지연 서술(약 2개월)이 남아 있다", ""))
 
-        # ── 2026-09-30 선크림 실측 회귀 (v1.3) ──
+        # ── v1.3 선크림 예시 실행 결함 회귀 ──
         # 기준어 표기변형 2개(치환으로 같은 canonical): 마스터 첫 표기(日やけ止め)는 응답에 없고 둘째(日焼け止め)만 있다
         v13 = {"category": "t", "rules": {"jp": {"변형치환": {"日やけ止め": "日焼け止め"}}},
                "anchor": {"jp": ["日やけ止め", "日焼け止め"]},

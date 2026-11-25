@@ -1,0 +1,179 @@
+{
+ "_읽는_법": "find-taste-words 시작 사전(영어 · gl=us) — 씨앗 목록이다. 카테고리마다 STEP 6 «사전 밖 후보»로 보강한다. pattern은 canonical(소문자 · 공백 제거)에 맞춘다: `full body` → `fullbody`.",
+ "rules": {
+  "변형치환": {
+   "flavour": "flavor",
+   "colour": "color",
+   "non-greasy": "non greasy"
+  }
+ },
+ "negation": {
+  "_설명": "before는 낱말 앞 3자, after는 뒤 6자. canonical은 공백이 없어 `not too sweet` → `nottoosweet`.",
+  "after": "^(?:ness|y|ish)?(?:free|less)",
+  "before": "(?:non|not|too|less|no)$"
+ },
+ "category_terms": [],
+ "exclude": "",
+ "themes": [
+  {
+   "name": "맛:단맛",
+   "pattern": "sweet(?!ener|potato)|sugary|honeyed"
+  },
+  {
+   "name": "맛:쓴맛",
+   "pattern": "bitter"
+  },
+  {
+   "name": "맛:산미",
+   "pattern": "acidic|acidity|tangy|sour|tart"
+  },
+  {
+   "name": "맛:짠맛",
+   "pattern": "salty|savory|savoury"
+  },
+  {
+   "name": "맛:고소",
+   "pattern": "nutty|toasty"
+  },
+  {
+   "name": "맛:매운맛",
+   "pattern": "spicy|hot(?:dog)?sauce|fiery"
+  },
+  {
+   "name": "맛:풍미",
+   "pattern": "rich(?:ness)?flavor|flavorful|richtaste"
+  },
+  {
+   "name": "향:과일향",
+   "pattern": "fruity|berry|berries"
+  },
+  {
+   "name": "향:꽃향",
+   "pattern": "floral"
+  },
+  {
+   "name": "향:초콜릿",
+   "pattern": "chocolat|cocoa|cacao"
+  },
+  {
+   "name": "향:스모키",
+   "pattern": "smoky|smokey"
+  },
+  {
+   "name": "향:우디",
+   "pattern": "woody|cedar|sandalwood"
+  },
+  {
+   "name": "향:시트러스",
+   "pattern": "citrus|citrusy|lemony"
+  },
+  {
+   "name": "향:무향",
+   "pattern": "unscented|fragrancefree|odorless|odourless",
+   "negatable": false
+  },
+  {
+   "name": "질감:부드러움",
+   "pattern": "smooth|silky|velvety|soft"
+  },
+  {
+   "name": "질감:크리미",
+   "pattern": "creamy"
+  },
+  {
+   "name": "질감:촉촉",
+   "pattern": "moist|hydrating|dewy"
+  },
+  {
+   "name": "질감:보송",
+   "pattern": "matte|powdery"
+  },
+  {
+   "name": "질감:가벼움",
+   "pattern": "lightweight|light(?:body|texture)"
+  },
+  {
+   "name": "질감:끈적임",
+   "pattern": "sticky|tacky"
+  },
+  {
+   "name": "질감:번들거림",
+   "pattern": "greasy|oily"
+  },
+  {
+   "name": "질감:바삭",
+   "pattern": "crispy|crunchy"
+  },
+  {
+   "name": "질감:쫀득",
+   "pattern": "chewy"
+  },
+  {
+   "name": "질감:묵직",
+   "pattern": "fullbody|fullbodied|heavybody|bold"
+  },
+  {
+   "name": "질감:청량",
+   "pattern": "fizzy|sparkling|carbonated|crisp"
+  },
+  {
+   "name": "소리:조용",
+   "pattern": "quiet|silent|lownoise|noiseless"
+  },
+  {
+   "name": "소리:소음",
+   "pattern": "noisy|loud|rattl"
+  },
+  {
+   "name": "시각:백탁",
+   "pattern": "whitecast"
+  },
+  {
+   "name": "시각:광택",
+   "pattern": "glossy|shiny|glow"
+  },
+  {
+   "name": "인상:깔끔",
+   "pattern": "clean(?:taste|finish|scent)"
+  },
+  {
+   "name": "인상:고급",
+   "pattern": "luxur|premium"
+  },
+  {
+   "name": "감정:편안",
+   "pattern": "relax|cozy|comfort(?:ing)?|soothing",
+   "negatable": false
+  },
+  {
+   "name": "감정:즐거움",
+   "pattern": "fun|delight|joy|happy",
+   "negatable": false
+  },
+  {
+   "name": "감정:상쾌함",
+   "pattern": "refresh|energiz|uplift",
+   "negatable": false
+  },
+  {
+   "name": "감정:자신감",
+   "pattern": "confiden|empower",
+   "negatable": false
+  },
+  {
+   "name": "감정:안심",
+   "pattern": "trust|reliable|peaceofmind",
+   "negatable": false
+  },
+  {
+   "name": "감정:만족",
+   "pattern": "worthit|satisf|noregret",
+   "negatable": false
+  }
+ ],
+ "brands": [],
+ "no_match": {
+  "with_brand": "브랜드·제품명",
+  "without_brand": "감각어 없음"
+ }
+}

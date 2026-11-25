@@ -20,7 +20,7 @@ REF_MONTHS = [f"{y}-{m:02d}" for y in (2023, 2024, 2025, 2026) for m in range(1,
 LAST = "2026-07"
 
 # 골격 자리표시자 — `new_skill.py`가 박는 것들. 남아 있으면 SKILL.md가 아직 골격이다.
-# 이전 판은 스크립트만 돌려 SKILL.md가 비어 있어도 «통과»를 냈다(2026-10-12 워크숍 사전 실행 실측).
+# 이전 판은 스크립트만 돌려 SKILL.md가 비어 있어도 «통과»를 냈다(사전 실행에서 드러난 결함).
 # «⬜로 박는다»처럼 기호를 설명하는 문장(조사가 바로 붙음)은 제외한다 — 감사기와 같은 기준.
 HOLE = re.compile(r"⬜(?![로를가는이의와과도/])")
 PLACEHOLDERS = ("(트리거 발화 1)", "(이 스킬에서의 용도를 쓸 것)", "| (결정식) |",
@@ -80,7 +80,7 @@ def fixture(tmp: pathlib.Path):
     (tmp / "r1.json").write_text(json.dumps({"data": ["썬크림", "브랜드에이 선스틱"]},
                                             ensure_ascii=False), encoding="utf-8")
     (tmp / "rules.json").write_text('{"썬":"선"}', encoding="utf-8")
-    # 응답 안에서 같은 keyword·같은 내용의 행이 반복된 경우(2026-09-30 실측 모양)
+    # 응답 안에서 같은 keyword·같은 내용의 행이 반복된 경우(실제 응답에서 관측된 모양)
     (tmp / "metrics_dup.json").write_text(json.dumps({"data": data + [data[2]]}, ensure_ascii=False), encoding="utf-8")
     # 시드별 intent_finder 응답 — request_detail로 확장 단계를 추정할 수 있는 모양
     (tmp / "if_a.json").write_text(json.dumps({"request_detail": {"keywords": ["선크림"]},

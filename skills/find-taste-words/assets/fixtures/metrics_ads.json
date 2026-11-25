@@ -1,0 +1,251 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keywords": [
+   "커피원두",
+   "커피 원두",
+   "원두 추천",
+   "디카페인 원두",
+   "커피원두 가격",
+   "고소한 원두 추천",
+   "산미 없는 원두",
+   "부드러운 원두",
+   "부드러운원두",
+   "산미 있는 원두",
+   "원두 쓴맛",
+   "다크초콜릿 원두",
+   "고소하고 묵직한 원두",
+   "산미 없는 고소한 원두",
+   "고소함 원두",
+   "커피 원두 고소장"
+  ],
+  "gl": "kr",
+  "data_type": "ads_metrics"
+ },
+ "cost_detail": {
+  "total_cost": 16
+ },
+ "data": [
+  {
+   "keyword": "커피원두",
+   "ads_metrics": {
+    "volume_total": 90000,
+    "volume_avg": 7500,
+    "volume_trend": 0.1,
+    "cpc": 0.9,
+    "competition": "MEDIUM",
+    "competition_index": 80,
+    "gg_volume_total": 30000,
+    "nv_volume_total": 60000
+   }
+  },
+  {
+   "keyword": "커피 원두",
+   "ads_metrics": {
+    "volume_total": 88000,
+    "volume_avg": 7333,
+    "volume_trend": 0.1,
+    "cpc": 0.8,
+    "competition": "MEDIUM",
+    "competition_index": 79,
+    "gg_volume_total": 29333,
+    "nv_volume_total": 58667
+   }
+  },
+  {
+   "keyword": "원두 추천",
+   "ads_metrics": {
+    "volume_total": 30000,
+    "volume_avg": 2500,
+    "volume_trend": 0.1,
+    "cpc": 0.7,
+    "competition": "MEDIUM",
+    "competition_index": 70,
+    "gg_volume_total": 10000,
+    "nv_volume_total": 20000
+   }
+  },
+  {
+   "keyword": "디카페인 원두",
+   "ads_metrics": {
+    "volume_total": 20000,
+    "volume_avg": 1666,
+    "volume_trend": 0.1,
+    "cpc": 0.6,
+    "competition": "MEDIUM",
+    "competition_index": 60,
+    "gg_volume_total": 6666,
+    "nv_volume_total": 13334
+   }
+  },
+  {
+   "keyword": "커피원두 가격",
+   "ads_metrics": {
+    "volume_total": 15000,
+    "volume_avg": 1250,
+    "volume_trend": 0.1,
+    "cpc": 0.6,
+    "competition": "MEDIUM",
+    "competition_index": 65,
+    "gg_volume_total": 5000,
+    "nv_volume_total": 10000
+   }
+  },
+  {
+   "keyword": "고소한 원두 추천",
+   "ads_metrics": {
+    "volume_total": 12000,
+    "volume_avg": 1000,
+    "volume_trend": 0.1,
+    "cpc": 0.5,
+    "competition": "MEDIUM",
+    "competition_index": 30,
+    "gg_volume_total": 4000,
+    "nv_volume_total": 8000
+   }
+  },
+  {
+   "keyword": "고소한원두추천",
+   "ads_metrics": {
+    "volume_total": 12000,
+    "volume_avg": 1000,
+    "volume_trend": 0.1,
+    "cpc": 0.5,
+    "competition": "MEDIUM",
+    "competition_index": 30,
+    "gg_volume_total": 4000,
+    "nv_volume_total": 8000
+   }
+  },
+  {
+   "keyword": "산미 없는 원두",
+   "ads_metrics": {
+    "volume_total": 8000,
+    "volume_avg": 666,
+    "volume_trend": 0.1,
+    "cpc": 0.4,
+    "competition": "MEDIUM",
+    "competition_index": 25,
+    "gg_volume_total": 2666,
+    "nv_volume_total": 5334
+   }
+  },
+  {
+   "keyword": "부드러운 원두",
+   "ads_metrics": {
+    "volume_total": 5000,
+    "volume_avg": 416,
+    "volume_trend": 0.1,
+    "cpc": 0.4,
+    "competition": "MEDIUM",
+    "competition_index": 22,
+    "gg_volume_total": 1666,
+    "nv_volume_total": 3334
+   }
+  },
+  {
+   "keyword": "부드러운원두",
+   "ads_metrics": {
+    "volume_total": 700,
+    "volume_avg": 58,
+    "volume_trend": 0.1,
+    "cpc": 0.35,
+    "competition": "MEDIUM",
+    "competition_index": 21,
+    "gg_volume_total": 233,
+    "nv_volume_total": 467
+   }
+  },
+  {
+   "keyword": "산미 있는 원두",
+   "ads_metrics": {
+    "volume_total": 3000,
+    "volume_avg": 250,
+    "volume_trend": 0.1,
+    "cpc": 0.3,
+    "competition": "MEDIUM",
+    "competition_index": 20,
+    "gg_volume_total": 1000,
+    "nv_volume_total": 2000
+   }
+  },
+  {
+   "keyword": "원두 쓴맛",
+   "ads_metrics": {
+    "volume_total": 2500,
+    "volume_avg": 208,
+    "volume_trend": 0.1,
+    "cpc": 0.3,
+    "competition": "MEDIUM",
+    "competition_index": 18,
+    "gg_volume_total": 833,
+    "nv_volume_total": 1667
+   }
+  },
+  {
+   "keyword": "다크초콜릿 원두",
+   "ads_metrics": {
+    "volume_total": 2000,
+    "volume_avg": 166,
+    "volume_trend": 0.1,
+    "cpc": 0.3,
+    "competition": "MEDIUM",
+    "competition_index": 15,
+    "gg_volume_total": 666,
+    "nv_volume_total": 1334
+   }
+  },
+  {
+   "keyword": "고소하고 묵직한 원두",
+   "ads_metrics": {
+    "volume_total": 1500,
+    "volume_avg": 125,
+    "volume_trend": 0.1,
+    "cpc": 0.2,
+    "competition": "MEDIUM",
+    "competition_index": 12,
+    "gg_volume_total": 500,
+    "nv_volume_total": 1000
+   }
+  },
+  {
+   "keyword": "산미 없는 고소한 원두",
+   "ads_metrics": {
+    "volume_total": 1300,
+    "volume_avg": 108,
+    "volume_trend": 0.1,
+    "cpc": 0.2,
+    "competition": "MEDIUM",
+    "competition_index": 11,
+    "gg_volume_total": 433,
+    "nv_volume_total": 867
+   }
+  },
+  {
+   "keyword": "고소함 원두",
+   "ads_metrics": {
+    "volume_total": 900,
+    "volume_avg": 75,
+    "volume_trend": 0.1,
+    "cpc": 0.2,
+    "competition": "MEDIUM",
+    "competition_index": 10,
+    "gg_volume_total": 300,
+    "nv_volume_total": 600
+   }
+  },
+  {
+   "keyword": "커피 원두 고소장",
+   "ads_metrics": {
+    "volume_total": 300,
+    "volume_avg": 25,
+    "volume_trend": 0.1,
+    "cpc": 0.1,
+    "competition": "MEDIUM",
+    "competition_index": 5,
+    "gg_volume_total": 100,
+    "nv_volume_total": 200
+   }
+  }
+ ]
+}

@@ -1,0 +1,39 @@
+{
+ "request_detail": {
+  "keywords": [
+   "런닝화",
+   "러닝화 추천"
+  ],
+  "gl": "kr",
+  "data_type": "ads_metrics"
+ },
+ "cost_detail": {
+  "total_cost": 2
+ },
+ "data": [
+  {
+   "keyword": "런닝화",
+   "ads_metrics": {
+    "volume_avg": 40500,
+    "volume_total": 486000,
+    "cpc": 0.6,
+    "competition_index": 80,
+    "gg_volume_total": 162000,
+    "nv_volume_total": 324000,
+    "volume_trend": 0.3
+   }
+  },
+  {
+   "keyword": "러닝화 추천",
+   "ads_metrics": {
+    "volume_avg": 9900,
+    "volume_total": 118800,
+    "cpc": 0.7,
+    "competition_index": 85,
+    "gg_volume_total": 39600,
+    "nv_volume_total": 79200,
+    "volume_trend": 0.3
+   }
+  }
+ ]
+}

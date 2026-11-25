@@ -82,7 +82,7 @@ class Master:
         """마스터에 적힌 요청 원문 목록(순서 유지 · 같은 글자 중복 제거) — 1단 과금 단위다.
 
         canonical 수가 아니다: «선크림»·«썬크림»처럼 같은 canonical의 표기변형을 둘 다 적으면 둘 다 요청·과금된다
-        (2026-09-30 선크림 실측: canonical 17 · 실제 요청 19)."""
+        (선크림 예시 실행에서 canonical 수로 세어 실제 과금과 어긋났다)."""
         out = [(t, ANCHOR, "기준어") for t in self.anchor.get(gl, [])]
         for c in self.concepts:
             for t in c.get("terms", {}).get(gl, []):
@@ -184,7 +184,7 @@ def cmd_select(a):
                 # 2단에는 마스터의 요청 원문만 넣는다 — 자동 반환된 표기변형까지 넣으면
                 # 같은 수요에 10크레딧을 두 번 낸다(T5). 변형은 2단 응답에서 다시 함께 돌아온다.
                 # 같은 canonical 원문이 여럿이면 **1단 응답에 실제로 있는** 원문 중 마스터에 먼저 적은 것을 쓴다
-                # (2026-09-30: 1단 응답에 없던 «日やけ止め»가 2단 요청어로 뽑혔다). 원문이 하나도 응답에 없으면 첫 원문.
+                # (선크림 예시 실행: 1단 응답에 없던 «日やけ止め»가 2단 요청어로 뽑혔다). 원문이 하나도 응답에 없으면 첫 원문.
                 cands = origs.get(c, [m.index(gl)[c][1]])
                 orig = next((k for k in cands if canon(k, {}) in got_forms), cands[0])
                 if not any(k in chosen for k in cands):
@@ -321,7 +321,7 @@ def cmd_compare(a):
             ws = [win_sum(d) for d, _ in members]
             rep_ws = win_sum(rep[0])
             # 표기변형끼리 전년 대비 부호가 갈리면 yoy가 대표 선택(12개월 최대)에 달린다 — 경고만 하고 고르지 않는다
-            # (2026-09-30 kr: 썬크림 +17.5% / 선크림 −10.9% — 대표는 12개월 합이 조금 큰 썬크림)
+            # (선크림 예시 실행 kr: 썬크림 상승 / 선크림 하락 — 대표는 12개월 합이 조금 큰 썬크림)
             vy = []
             for d, _ in members:
                 sd = series(d)

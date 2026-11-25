@@ -1,0 +1,26 @@
+{
+ "skill_name": "map-entry-situations",
+ "evals": [
+  {
+   "id": 0,
+   "name": "seasonal-anti-phase-camping-chair",
+   "prompt": "캠핑 의자 카테고리 진입 상황(CEP) 지도 그려줘. 한국 시장이고, 우리는 헬리녹스, 경쟁은 코베아랑 콜맨. 다음 시즌 캠페인 상황을 정하려고 해.",
+   "expected_output": "계절 역위상 + 조회 시점 함정. 여름 계곡 · 물놀이 CEP와 겨울 동계캠핑 CEP의 성수기가 반대이고, 조회가 가을이면 데이터는 여름 성수기 직후에서 끝난다. 채점: ① STEP 0 sense.json 초안(앵커: 캠핑의자 · 캠핑체어 · 릴렉스체어 등, 변형치환 캠핑체어→캠핑의자)을 보여 주고 확인받은 뒤 confirmed_by_user=true ② intent_finder 시드 1개씩 · 호출마다 limit/반환 원장 기록, 반환=limit이면 절단으로 수렴 판정 보류 ③ path_finder 파일럿 → path_gate.py(원장 소진 · 예약 포함) → call일 때만 본 호출, 예산 결정식 50 + 40 × U 제시 ④ 전량 ads_metrics 1 × N → select_stage2.py로 10 × (B + M_main + M_tail) ⑤ check_refmonth로 기준월 · 조회일 · 지연 표기, 마지막 달 기본 제외 · 미완결 의심 건수 ⑥ 추세 판정은 12개월 전년 동기, 겨울 CEP의 비수기 3개월 창은 게이트 미달이면 증감률을 내지 않음 — 조회일 기준으로 «겨울 상황이 줄었다»고 쓰지 않음 ⑦ peak_months로 CEP마다 성수기를 달리 적고 다음 성수기는 미관측이라고 boundary에 씀 ⑧ 논브랜드 하한 순위 · 헬리녹스/코베아/콜맨 브랜드 연결 표 · 브랜드 사전을 상위 검색어로 보강 ⑨ CEP 이름 해석은 [추정], 연상률 · 구매로 말하지 않음 ⑩ [대조군] cep_map.csv와 report.html이 산출됨",
+   "files": []
+  },
+  {
+   "id": 1,
+   "name": "ambiguous-keyword-mask",
+   "prompt": "마스크 사는 사람들이 어떤 상황에서 찾는지 CEP 뽑아줘. 우리는 메디힐이야.",
+   "expected_output": "뜻이 여러 개인 키워드(방역 마스크 vs 시트 마스크팩) + gl 미지정. 채점: ① 실행 전 gl을 묻는다 ② 분야를 묻거나 추론해 sense.json에 domain(뷰티 · 시트 마스크) · anchor_terms(마스크팩 · 시트마스크 등) · exclude(kf94 · kf80 · 덴탈 · 비말 · 방역 등)를 초안으로 쓰고 사용자 확인 전에는 API를 부르지 않는다(스크립트가 confirmed_by_user=false면 멈춤) ③ 제외어에 걸린 검색어를 keyword_info 요청 목록에서 빼 크레딧을 쓰지 않고 경계 밖 수를 scope.excluded에 적는다 ④ 미분류 비중과 미분류 상위 검색어를 보고하고, 다른 뜻 검색어가 섞였으면 exclude 보강 후 STEP 3부터 다시(0크레딧) ⑤ 방역 마스크 쪽 계절(황사 · 미세먼지) 상황이 뷰티 CEP로 집계되지 않음 ⑥ 경쟁 브랜드를 지정하지 않았으면 brand_link_call이 «경쟁 구도만»으로 나오고 경쟁 우위를 지어내지 않음 ⑦ 4-Label 표기 ⑧ [대조군] 상황 CEP 표가 산출됨",
+   "files": []
+  },
+  {
+   "id": 2,
+   "name": "brand-dominated-sunscreen",
+   "prompt": "선크림 진입 상황 중에 아넷사가 이미 잡고 있는 상황이랑 비어 있는 상황 나눠줘. 우리는 라운드랩, 한국 시장. 예산은 6,000 크레딧.",
+   "expected_output": "브랜드 지배 CEP(골프 · 바다 등에서 특정 브랜드 검색어가 CEP 검색량 대부분) + 표기변형(썬크림/선크림, 선 크림 중복) + 예산 제약. 채점: ① 우선순위를 전체가 아니라 논브랜드 하한으로 매기고 브랜드 검색량을 따로 적음 ② cep_brand.csv로 기준/경쟁 브랜드 연결, brand_link_call(미점유 · 기준 우위 · 경쟁 우위)이 규칙 임계[가정]와 함께 나옴 ③ 표기변형 그룹 하한 · 상한 병기, 같은 검색 중복(dup_of)은 한 번만, 상한에서 순위가 뒤집히면 flip_under_hi ④ path_gate.py가 6,000 안에서 본 호출을 판정하고 실측 누적이 넘으면 2단 M을 줄임 — 비용 보고서(report.cost.json) 소진 ≤ 예산 ⑤ 시드 표기 변경(선크림→썬크림 경로)이면 변형치환 규칙을 넣고 다시 집계 ⑥ «아넷사가 잡고 있다»를 연상 · 점유율로 단정하지 않고 «함께 검색됨»으로 서술 ⑦ 게이트 미만 CEP를 헤드라인 주어로 쓰지 않음 ⑧ [대조군] report.html 렌더 통과",
+   "files": []
+  }
+ ]
+}

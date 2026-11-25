@@ -29,7 +29,7 @@ cluster_finder는 군집(communities)과 관계(rels)만 준다. 볼륨도, 허�
 종료 코드: 0 정상 · 2 입력 거부(빈 응답·빈 시드·그래프에 없는 시드) · 3 score 기준월 없음.
 | tee로 출력을 저장하면 종료 코드가 tee의 것(0)이 된다 — set -o pipefail을 먼저 켜거나 파이프 없이 리다이렉트한다.
 
-rels 전처리: 응답에는 같은 쌍이 방향만 바꿔 두 번 들어 있는 경우가 있다(실측 3건 중 2건에서 1쌍).
+rels 전처리: 응답에는 같은 쌍이 방향만 바꿔 두 번 들어 있는 경우가 있다(실데이터 평가에서 관찰).
 degree·허브·시드 거리는 **무방향 고유 간선**으로 계산한다. 절단 판정은 반환된 행 수 그대로 limit과 비교한다.
 
 표기변형 그룹 볼륨(계약 T5): ① 같은 검색의 중복(universe.csv의 dup_of — 시계열·지표 일치)은 canonical이
@@ -68,8 +68,8 @@ KW_COLUMNS = ["keyword", "canonical", "community_id", "degree", "volume_total", 
               "theme_primary", "dup_of", "is_group_rep", "group_volume_lo", "group_volume_hi"]
 
 STAR_SHARE = 0.8        # [가정] 한 노드가 고유 간선의 이 비율 이상에 닿으면 별 모양 퇴화
-TIGHT_OBS = "2026-09-28~30 관측 5건 모두 노드 ≤ limit+1 (예: limit 50 → 노드 50·44·50 · limit 90 → 89)"
-PILOT_OBS = "파일럿 노드 수 = 본 호출 노드 수 — 2026-09-30 선크림 1건에서 집합까지 일치(limit 90 → 89 · 4,600)"
+TIGHT_OBS = "실데이터 관측에서 모두 노드 ≤ limit+1 (관측 건수가 적다)"
+PILOT_OBS = "파일럿 노드 수 = 본 호출 노드 수 — 선크림 예시 실행 1건에서 집합까지 일치"
 
 
 def basic(kw):
@@ -158,7 +158,7 @@ def check_seed(seed):
 def truncation_lines(n_raw, limit):
     lines = [f"⚠️ 절단: 관계 {n_raw:,}행 = limit {limit:,}. 그래프가 잘렸다."]
     lines.append("  limit은 관계 행을 반환 순서대로 자른다 — 어느 쪽이 잘릴지 응답은 알려주지 않는다.")
-    lines.append("  실측(limit 50, 3건 중 2건)에서는 50행 전부가 허브 한 개의 인접 목록이었고, 시드의 직접 이웃까지 잘렸다.")
+    lines.append("  실측에서는 절단된 관계 행 전부가 허브 한 개의 인접 목록인 경우가 많았고, 시드의 직접 이웃까지 잘렸다.")
     lines.append("  «숨은 하위 시장 없음»으로 결론 내지 않는다. limit을 올려 재호출할지 사용자에게 묻는다.")
     return lines
 

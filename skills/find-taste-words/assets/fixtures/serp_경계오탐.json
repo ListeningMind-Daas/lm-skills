@@ -1,0 +1,59 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keyword": "직수 정수기",
+  "gl": "kr",
+  "num": 20,
+  "device": "mobile"
+ },
+ "cost_detail": {
+  "input_count": 1,
+  "total_cost": 30
+ },
+ "collected_at": "2026-11-17T00:00:00.000Z",
+ "_note": "합성 픽스처(v0.1.1 회귀) — 정수기(kr) 실데이터 재생에서 공백 제거 부분일치로 오탐이 난 문장 유형을 그대로 옮겼다. 검색량은 지어냈다",
+ "data": [
+  {
+   "sequence": 1,
+   "type": "ai_overview",
+   "text_blocks": [
+    {
+     "type": "paragraph",
+     "snippet": "역삼투압 방식 대신 나노나 중공사막 필터를 주로 씁니다. 최신 기술 및 가격까지 비교했습니다. 물을 넣을 곳에 맞춰 앞뒤로 움직일 수 있고요. 직수정수기는 말통이 없기때문에 편리하고요. 얼음이나 냉/온 기능이 있기 때문에 따로 물을 끓일 필요가 없습니다."
+    }
+   ],
+   "references": [
+    {
+     "title": "직수 정수기 장단점",
+     "link": "https://example.com/direct"
+    }
+   ]
+  },
+  {
+   "sequence": 2,
+   "type": "organic_results",
+   "items": [
+    {
+     "title": "10초만에 다글로 시작하기",
+     "snippet": "엔씨소프트(NCSOFT) 음성 기술로 녹음을 글로 변환해서 모읍니다. 공유하기 블로그 페이스북 카카오톡.",
+     "link": "https://example.net/voice"
+    },
+    {
+     "title": "렌탈 제품 안내",
+     "snippet": "정수기, 공기청정기, 비데, 매트리스, 안마의자 렌탈. 관리라고 해봐야 4개월에 한 번 필터 교환해 주고 가는 것임. 웰스 슈퍼쿨링2 정수기 (냉온정).",
+     "link": "https://example.net/rental"
+    },
+    {
+     "title": "무전원 정수기 후기",
+     "snippet": "콘센트가 멀어도 쓸 수 있고 소음/진동이 없어 좋습니다. 소음과 진동이 없는 제품을 찾았습니다. 오염 걱정 없는 직수 방식.",
+     "link": "https://example.net/review"
+    },
+    {
+     "title": "매트리스 옆 침실 정수기",
+     "snippet": "매트리스 옆에 둬도 보송한 촉감의 커버가 좋습니다.",
+     "link": "https://example.net/bedroom"
+    }
+   ]
+  }
+ ]
+}

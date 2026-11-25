@@ -187,9 +187,10 @@ def main():
     if a.kind == "task" and not FORMULA.search(text):
         add("P0", "크레딧 결정식이 없다", "예산을 계산할 수 없으면 고객이 비용을 통제하지 못한다 — "
             "표 머리가 아니라 식(예: `1 × N + 10 × K`)이 본문에 있어야 한다")
-    if re.search(r"ads_info", text) and not re.search(r"ads_info[^\n]{0,80}(쓰지 않|10|상위집합)", text):
+    if re.search(r"ads_info", text) and not re.search(r"ads_info[^\n]{0,160}(cost_detail|단가|쓰지 않|10)", text):
         add("P1", "`ads_info` 사용이 단가 근거 없이 등장한다",
-            "단가가 환경마다 다르게 관측됐다(10 · 1). 상위집합인 `all`을 쓰고 «쓰지 않는다»고 명시할 것 (계약 §1)")
+            "단가가 환경마다 다를 수 있다. 쓰려면 첫 호출 `cost_detail`로 단가를 확인한다고 "
+            "적고, 결정식에는 확인 전 상한 10을 쓸 것 (계약 §1 v1.3)")
 
     # ── 함정 커버리지 (meta 스킬은 데이터를 산출하지 않으므로 면제)
     ctx = {"monthly": monthly, "expand": expand, "share": share, "any": True}

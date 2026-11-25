@@ -1,0 +1,126 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keywords": [
+   "자동차보험",
+   "자동차보험 비교",
+   "다이렉트 자동차보험",
+   "자동차보험 가격",
+   "자동차보험 계산기",
+   "자동차보험 갱신",
+   "자동차보험 만족도",
+   "자동차보험 특약"
+  ],
+  "gl": "kr",
+  "data_type": "ads_metrics"
+ },
+ "cost_detail": {
+  "total_cost": 8
+ },
+ "data": [
+  {
+   "keyword": "자동차보험",
+   "ads_metrics": {
+    "volume_total": 200000,
+    "volume_avg": 16666,
+    "volume_trend": 0.1,
+    "cpc": 3.0,
+    "competition": "MEDIUM",
+    "competition_index": 95,
+    "gg_volume_total": 66666,
+    "nv_volume_total": 133334
+   }
+  },
+  {
+   "keyword": "자동차보험 비교",
+   "ads_metrics": {
+    "volume_total": 60000,
+    "volume_avg": 5000,
+    "volume_trend": 0.1,
+    "cpc": 4.0,
+    "competition": "MEDIUM",
+    "competition_index": 96,
+    "gg_volume_total": 20000,
+    "nv_volume_total": 40000
+   }
+  },
+  {
+   "keyword": "다이렉트 자동차보험",
+   "ads_metrics": {
+    "volume_total": 50000,
+    "volume_avg": 4166,
+    "volume_trend": 0.1,
+    "cpc": 4.5,
+    "competition": "MEDIUM",
+    "competition_index": 97,
+    "gg_volume_total": 16666,
+    "nv_volume_total": 33334
+   }
+  },
+  {
+   "keyword": "자동차보험 가격",
+   "ads_metrics": {
+    "volume_total": 30000,
+    "volume_avg": 2500,
+    "volume_trend": 0.1,
+    "cpc": 3.5,
+    "competition": "MEDIUM",
+    "competition_index": 90,
+    "gg_volume_total": 10000,
+    "nv_volume_total": 20000
+   }
+  },
+  {
+   "keyword": "자동차보험 계산기",
+   "ads_metrics": {
+    "volume_total": 20000,
+    "volume_avg": 1666,
+    "volume_trend": 0.1,
+    "cpc": 2.0,
+    "competition": "MEDIUM",
+    "competition_index": 80,
+    "gg_volume_total": 6666,
+    "nv_volume_total": 13334
+   }
+  },
+  {
+   "keyword": "자동차보험 갱신",
+   "ads_metrics": {
+    "volume_total": 15000,
+    "volume_avg": 1250,
+    "volume_trend": 0.1,
+    "cpc": 2.5,
+    "competition": "MEDIUM",
+    "competition_index": 85,
+    "gg_volume_total": 5000,
+    "nv_volume_total": 10000
+   }
+  },
+  {
+   "keyword": "자동차보험 만족도",
+   "ads_metrics": {
+    "volume_total": 1500,
+    "volume_avg": 125,
+    "volume_trend": 0.1,
+    "cpc": 1.0,
+    "competition": "MEDIUM",
+    "competition_index": 40,
+    "gg_volume_total": 500,
+    "nv_volume_total": 1000
+   }
+  },
+  {
+   "keyword": "자동차보험 특약",
+   "ads_metrics": {
+    "volume_total": 9000,
+    "volume_avg": 750,
+    "volume_trend": 0.1,
+    "cpc": 2.0,
+    "competition": "MEDIUM",
+    "competition_index": 70,
+    "gg_volume_total": 3000,
+    "nv_volume_total": 6000
+   }
+  }
+ ]
+}

@@ -80,7 +80,7 @@ def run(cmd, tmp):
 
 
 def check_ascii_markers():
-    """P1-4 회귀 — 2026-09-28 US 실측 충돌(best⊂bestbuy · or⊂for · deal⊂ideal · vacuumale)."""
+    """P1-4 회귀 — US 실데이터 평가에서 나온 충돌 유형(best⊂bestbuy · or⊂for · deal⊂ideal · vacuumale)."""
     sys.path.insert(0, str(HERE))
     from buyer_match import Marker, brand_marker, canon_bounds
     rules = {"vacuums": "vacuum"}
@@ -152,7 +152,7 @@ def check_us_duplicates(tmp):
 
 
 def check_channel_brand(tmp):
-    """V13 회귀(2026-09-30 선크림 px) — 브랜드 사전에 판매 채널명이 있으면 경고하고 리포트에 적는다."""
+    """V13 회귀(선크림 예시 실행의 px) — 브랜드 사전에 판매 채널명이 있으면 경고하고 리포트에 적는다."""
     d = tmp / "chan"; d.mkdir()
     themes = {"rules": {"변형치환": {}},
               "themes": [{"name": "채널", "tier": "buyer", "pattern": "px|다이소"},

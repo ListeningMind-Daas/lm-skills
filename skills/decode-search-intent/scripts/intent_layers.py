@@ -283,7 +283,7 @@ def cmd_pick(a):
                 chosen[r["keyword"]] = r
                 added[layer] += 1
     # 단계-API 대조 표본 보장 — 탐색·비교·구매로 분류된 그룹이 --min-stage-groups개 이상 들어가도록 단계를
-    # 돌아가며 볼륨 순으로 더한다(2026-09-30 선크림: 기본 선택 75개 중 대조 가능 11그룹 — 일치율 결론 불가)
+    # 돌아가며 볼륨 순으로 더한다(선크림 예시 실행: 기본 선택만으로는 대조 가능 그룹이 모자라 일치율 결론 불가)
     stage_names = [n for n, _ in d.stages if n in STAGE_TO_API]
     stage_pool = {n: [r for r in reps if r["stage"] == n] for n in stage_names}
     def n_staged():

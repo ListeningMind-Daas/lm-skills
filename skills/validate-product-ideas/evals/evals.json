@@ -5,7 +5,7 @@
    "id": 0,
    "name": "summer-category-offseason-query",
    "prompt": "당류 줄인 아이스크림(저당·제로슈거) 신제품 컨셉 잡고 있어. 만들기 전에 한국 검색 수요가 있는지 확인해줘. 지금 9월 말인데 비수기라 수요가 작게 나오겠지?",
-   "expected_output": "T1: 카드 헤더에 기준월(응답의 최신 월에서 읽는다 — 관측 지연 1개월)·조회일·지연을 적고, «지금 비수기라 작다»는 전제를 바로잡는다 — 데이터는 조회 달이 아니라 기준월까지이며 크기는 기준월까지의 12개월 합이다. T2: 마지막 달 완결성 의심 건수를 카드에 적고 전년 대비는 마지막 달 제외 창으로 계산한다. T3: volume_trend 대신 전년 동기 비교. T5: 제로슈가/제로슈거를 한 그룹으로 묶고 그룹 볼륨을 하한(최댓값) ~ 상한(합)으로 병기하며, 층 순위는 하한 기준으로 두되 상한에서 뒤집히면 그 사실을 적는다. T4: 게이트(판정과 같은 창의 전년 기저) 미달 그룹을 방향 판정에서 뺀 수를 카드에 적는다. 크기는 volume_avg(성수기 3개월)가 아니라 volume_total로 말한다. PMF 점수·출시 권고·판매 예측을 내지 않는다.",
+   "expected_output": "T1: 카드 헤더에 기준월(응답의 최신 월에서 읽는다)·조회일·지연을 적고, «지금 비수기라 작다»는 전제를 바로잡는다 — 데이터는 조회 달이 아니라 기준월까지이며 크기는 기준월까지의 12개월 합이다. T2: 마지막 달 완결성 의심 건수를 카드에 적고 전년 대비는 마지막 달 제외 창으로 계산한다. T3: volume_trend 대신 전년 동기 비교. T5: 제로슈가/제로슈거를 한 그룹으로 묶고 그룹 볼륨을 하한(최댓값) ~ 상한(합)으로 병기하며, 층 순위는 하한 기준으로 두되 상한에서 뒤집히면 그 사실을 적는다. T4: 게이트(판정과 같은 창의 전년 기저) 미달 그룹을 방향 판정에서 뺀 수를 카드에 적는다. 크기는 volume_avg(성수기 3개월)가 아니라 volume_total로 말한다. PMF 점수·출시 권고·판매 예측을 내지 않는다.",
    "files": []
   },
   {
@@ -26,7 +26,7 @@
    "id": 3,
    "name": "mineral-toneup-sunstick-order",
    "prompt": "«무기자차 톤업 선스틱» 수요 있을까? 민감 피부용으로 생각 중이야.",
-   "expected_output": "① 확장 직후 prepare_stages.py universe → keyword_info(ads_metrics) → prepare_stages.py merge로 metrics_stage1.json을 만든 뒤 coverage_curve·review를 돌린다 ② intent_finder 호출에 sort=volume_avg · order=desc를 명시 ③ «~없는» 부정형 표현을 해결책 층에 두거나 문제 층 패턴에서 막고 [가정]으로 적는다 ④ 판정 대신 층별 신호 카드 (배경: 2026-09-30 실측: STEP 3 coverage_curve·STEP 3.5 review가 metrics_stage1.json을 요구하는데 그 파일은 STEP 5에서야 생겨 손으로 병합했다. «백탁 없는»·«눈시림 없는» 같은 부정형 표현이 문제 층으로 잡힐 수 있다.)",
+   "expected_output": "① 확장 직후 prepare_stages.py universe → keyword_info(ads_metrics) → prepare_stages.py merge로 metrics_stage1.json을 만든 뒤 coverage_curve·review를 돌린다 ② intent_finder 호출에 sort=volume_avg · order=desc를 명시 ③ «~없는» 부정형 표현을 해결책 층에 두거나 문제 층 패턴에서 막고 [가정]으로 적는다 ④ 판정 대신 층별 신호 카드 (배경: 선크림 예시 실행에서 STEP 3 coverage_curve·STEP 3.5 review가 metrics_stage1.json을 요구하는데 그 파일은 STEP 5에서야 생겨 손으로 병합했다. «백탁 없는»·«눈시림 없는» 같은 부정형 표현이 문제 층으로 잡힐 수 있다.)",
    "files": []
   }
  ]

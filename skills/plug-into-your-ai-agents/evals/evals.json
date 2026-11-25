@@ -19,7 +19,7 @@
   {
    "id": 1,
    "prompt": "Claude 에이전트가 cluster_finder랑 path_finder를 알아서 호출해서 여정 분석하게 연결해줘.",
-   "expected_output": "시장(gl)·세션 예산·프레임워크가 없으므로 먼저 묻는다(즉시 실연결하지 않음). cluster_finder 결정식을 150 + 50×고유 키워드(노드) 수로 적는다(관계 수가 아님) — 노드는 기본 응답의 communities 구성원(data_type=all이면 rels 쌍 양끝 포함) 합집합으로 세며 cost_detail.output_count와 같다. limit은 관계 행 상한이라 호출 전 추정은 150 + 50×(limit+1) [가정](보수 옵션 2×limit)이다. path_finder는 50 + 40×경로 안 고유 키워드 수로 네 도구 중 최고가임을 알리고, limit이 경로 수만 묶으므로 호출 전 추정은 ⌈limit×--path-kw-mult(기본 3)⌉ 상한 [가정]에 기댄다는 점(관측 limit 20 → 25키워드)과 실제가 넘으면 halted_after_overrun으로 멈춘다는 점을 설명한다. cluster는 관계 행 ≥ limit 또는 노드 > limit이면 truncated=true, rels 없는 기본 응답에서 판정할 수 없으면 truncated=null로 수렴 판정을 보류한다. path_finder는 세션 인접 집계 행동이지 개인 여정이 아니라고 적는다.",
+   "expected_output": "시장(gl)·세션 예산·프레임워크가 없으므로 먼저 묻는다(즉시 실연결하지 않음). cluster_finder 결정식을 150 + 50×고유 키워드(노드) 수로 적는다(관계 수가 아님) — 노드는 기본 응답의 communities 구성원(data_type=all이면 rels 쌍 양끝 포함) 합집합으로 세며 cost_detail.output_count와 같다. limit은 관계 행 상한이라 호출 전 추정은 150 + 50×(limit+1) [가정](보수 옵션 2×limit)이다. path_finder는 50 + 40×경로 안 고유 키워드 수로 네 도구 중 최고가임을 알리고, limit이 경로 수만 묶으므로 호출 전 추정은 ⌈limit×--path-kw-mult(기본 3)⌉ 상한 [가정]에 기댄다는 점(limit보다 고유 키워드가 많이 나올 수 있다)과 실제가 넘으면 halted_after_overrun으로 멈춘다는 점을 설명한다. cluster는 관계 행 ≥ limit 또는 노드 > limit이면 truncated=true, rels 없는 기본 응답에서 판정할 수 없으면 truncated=null로 수렴 판정을 보류한다. path_finder는 세션 인접 집계 행동이지 개인 여정이 아니라고 적는다.",
    "files": [],
    "checks": [
     "누락 입력 질문",
@@ -32,7 +32,7 @@
   {
    "id": 2,
    "prompt": "연결해 둔 에이전트가 keyword_info 응답의 volume_trend로 라이징 키워드를 뽑고, 조회한 날짜를 기준으로 '이번 달 급상승'이라고 답하던데 그대로 둬도 돼?",
-   "expected_output": "그대로 두면 안 된다. 런타임 주석이 volume_trend를 volume_trend_do_not_use로 격리하고 추세는 yoy_ex_last_month(마지막 달을 뺀 3개월 전년 동기 비교)를 쓰게 한다. lm_meta의 data_ref_month·queried_at·lag_months로 기준월/조회일/지연을 답에 적게 한다(지연은 응답에서 읽는다 — 관측 1개월, 고정값 아님). 마지막 달 미완결 의심(last_month_suspect), 결측 월 계산 불가(missing_months), 기저 게이트 미달(below_base_gate)은 랭킹에서 뺀다. 저장한 raw 응답을 check_refmonth.py·trend_yoy.py로 교차확인한다.",
+   "expected_output": "그대로 두면 안 된다. 런타임 주석이 volume_trend를 volume_trend_do_not_use로 격리하고 추세는 yoy_ex_last_month(마지막 달을 뺀 3개월 전년 동기 비교)를 쓰게 한다. lm_meta의 data_ref_month·queried_at·lag_months로 기준월/조회일/지연을 답에 적게 한다(지연은 응답에서 읽는다 — 고정값 아님). 마지막 달 미완결 의심(last_month_suspect), 결측 월 계산 불가(missing_months), 기저 게이트 미달(below_base_gate)은 랭킹에서 뺀다. 저장한 raw 응답을 check_refmonth.py·trend_yoy.py로 교차확인한다.",
    "files": [],
    "checks": [
     "T3 volume_trend 격리",

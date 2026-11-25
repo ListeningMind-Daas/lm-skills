@@ -1,0 +1,25 @@
+{
+ "result": "OK",
+ "source": "listeningmind-data-api",
+ "request_at": "2026-10-15T00:00:00.000Z",
+ "request_detail": {
+  "keyword": "선크림",
+  "gl": "kr",
+  "period_days": 14,
+  "limit": 5,
+  "sort": "score",
+  "order": "desc"
+ },
+ "cost_detail": {
+  "input_cost": 50,
+  "input_count": 0,
+  "input_total_cost": 0,
+  "output_cost": 2,
+  "output_count": 0,
+  "output_total_cost": 0,
+  "total_cost": 0
+ },
+ "used_credits": 0,
+ "total": 0,
+ "data": []
+}

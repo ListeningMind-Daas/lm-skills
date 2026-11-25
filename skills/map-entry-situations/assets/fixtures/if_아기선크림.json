@@ -1,0 +1,19 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keywords": [
+   "아기 선크림"
+  ],
+  "gl": "kr",
+  "limit": 50
+ },
+ "cost_detail": {
+  "total_cost": 38
+ },
+ "data": [
+  "아기 선크림",
+  "라운드랩 아기 선크림",
+  "닥터지 선크림 트러블",
+  "선스틱 군대"
+ ]
+}

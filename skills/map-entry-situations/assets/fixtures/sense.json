@@ -1,0 +1,23 @@
+{
+ "keyword": "선크림",
+ "gl": "kr",
+ "domain": "화장품 · 자외선 차단",
+ "anchor_terms": [
+  "선크림",
+  "선블록",
+  "선스틱"
+ ],
+ "seeds": [
+  "여름 선크림",
+  "아기 선크림"
+ ],
+ "exclude": [
+  "노래|가사"
+ ],
+ "focal_brand": "라운드랩",
+ "competitors": [
+  "아넷사",
+  "닥터지"
+ ],
+ "confirmed_by_user": true
+}
