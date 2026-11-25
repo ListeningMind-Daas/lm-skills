@@ -19,13 +19,14 @@ MIT 라이선스입니다. 데이터는 포함돼 있지 않습니다 — 스킬
 | `benchmark-competitors` | 자사·경쟁 브랜드의 월간 검색 점유율과 수식어 구성을 월별 패널로 비교하고 전년 동월 대비 갭 변화를 알린다 (월 단위, 실시간 아님) | keyword_info |
 | `validate-product-ideas` | 제품 가설이 기대는 검색 수요가 문제·목표·해결책·제품 층마다 있는지, 커지는지, 브랜드에 잠겨 있는지 수요 신호 카드로 확인한다 (출시 판정 아님) | keyword_info · intent_finder |
 | `compare-markets-across-countries` | 같은 카테고리를 한·미·일에서 국가별 동의어 매핑으로 묶어 나라 안 비중 지수·전년 동기 성장·시즌 형태를 비교한다 | keyword_info |
-| `plug-into-your-ai-agents` | API 운영 명세의 엔드포인트 전부(현재 9개)를 여러분의 AI 에이전트에 도구로 연결하고, 호출 전 예산 가드와 크레딧 원장을 붙여 모의 실행으로 먼저 검증한다 — 명세가 바뀌면 `sync`가 알리고 새 엔드포인트는 도구로 자동 추가된다 | 운영 명세 전부 (keyword_info · intent_finder · cluster_finder · path_finder · serp · trend_finder · keyword_list 2종 · usage) |
+| `plug-into-your-ai-agents` | API 운영 명세의 엔드포인트 전부(현재 10개)를 여러분의 AI 에이전트에 도구로 연결하고, 호출 전 예산 가드와 크레딧 원장을 붙여 모의 실행으로 먼저 검증한다 — 명세가 바뀌면 `sync`가 알리고 새 엔드포인트는 도구로 자동 추가된다 | 운영 명세 전부 (keyword_info · intent_finder · cluster_finder · path_finder · serp · trend_finder · keyword_list 2종 · usage) |
 | `forecast-season-demand` | 시드의 연관 검색어를 세그먼트로 묶고 48개월 월별 검색량으로 다음 3~6개월 수요(전년 동기 대비)와 준비·캠페인·출시·피크 월을 낸다 — 계절 역위상 경고 포함 · HTML 리포트 | intent_finder · keyword_info |
 | `find-journey-leaks` | 진입 시드에서 시작하는 세션 인접 경로를 브랜드·일반·비교·채널로 나눠, 경로가 어디서 경쟁 브랜드로 넘어가는지와 내 브랜드가 잡는·놓치는 지점을 보여준다 (예산 게이트 포함) · HTML 리포트 | path_finder · keyword_info |
 | `find-taste-words` | 연관 검색어와 검색결과 화면 문구에서 감각어·감정어를 규칙 사전으로 뽑아 검색량으로 무게를 달고 함께 나오는 말끼리 취향 묶음으로 정리한다 (회피 표현 분리) · HTML 리포트 | intent_finder · keyword_info · serp |
 | `rank-category-brands` | 분야 하나의 브랜드 사전으로 브랜드별 검색량 순위·전년 동기 변화·3년 흐름을 내고, 논브랜드를 분리한 검색 점유(근사)와 한국 성별·연령별 순위를 보여준다 · HTML 리포트 | keyword_info |
 | `map-entry-situations` | 연관 검색어와 앞선 검색 경로에서 진입 상황(CEP)을 규칙 사전으로 뽑아 논브랜드 검색량·전년 동기 추세·계절성·브랜드 연결로 줄 세운 CEP 지도를 낸다 · HTML 리포트 | intent_finder · path_finder · keyword_info |
 | `spot-segment-risers` | 급부상 이슈와 연관 검색어에서 후보를 모아 한국 성별·연령 세그먼트별 급등·신규·과대 지수 대상을 줄 세운다 (일본·미국은 전체 순위만) · HTML 리포트 | trend_finder · intent_finder · keyword_info |
+| `read-search-context` | 시드 검색어 하나의 앞뒤에 붙는 검색을 세션 인접 경로로 세어 갈래로 묶고, 갈래마다 무엇을 하려는 검색인지 검색 결과 화면 근거와 함께 [추정]으로 적는다 — 작년 같은 시기와의 비교는 검색량으로만 · 경로 맵 · HTML 리포트 (예산 게이트 포함) | path_finder · keyword_info · serp |
 | `lm-skill-creator` | 같은 규율을 지키는 새 스킬을 만든다 · 기존 스킬을 감사한다 | — |
 
 ### 이전 카탈로그와의 대응
@@ -87,7 +88,7 @@ python3 ~/.claude/skills/map-your-market/scripts/selftest.py
 
 같은 데이터를 다뤄 본 사람이 반복해서 밟는 함정을 계약으로 고정했습니다 — 기준월·지연(T1), 마지막 달 미완결(T2), `volume_trend` 대체(T3), 기저 게이트(T4), 표기 변형 정규화(T5), 결측 월(T6), 절단 검사(T7), 논브랜드 분리(T8).
 
-`skills/lm-skill-creator/scripts/audit_skill.py <스킬 폴더>`로 어떤 스킬이든 이 계약을 지키는지 정적 감사를 돌릴 수 있습니다. 이 저장소의 13개 스킬은 P0·P1·P2 모두 0건입니다.
+`skills/lm-skill-creator/scripts/audit_skill.py <스킬 폴더>`로 어떤 스킬이든 이 계약을 지키는지 정적 감사를 돌릴 수 있습니다. 이 저장소의 20개 스킬은 P0·P1·P2 모두 0건입니다.
 
 ## 만든 곳
 

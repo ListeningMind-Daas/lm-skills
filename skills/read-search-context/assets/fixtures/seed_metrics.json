@@ -1,0 +1,30 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keywords": [
+   "캠핑의자"
+  ],
+  "gl": "kr",
+  "data_type": "ads_metrics"
+ },
+ "cost_detail": {
+  "total_cost": 1
+ },
+ "used_credits": 11110,
+ "data": [
+  {
+   "keyword": "캠핑 의자",
+   "ads_metrics": {
+    "volume_avg": 9900,
+    "volume_total": 118800,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 2970,
+    "nv_volume_avg": 6930,
+    "gg_volume_total": 35640,
+    "nv_volume_total": 83160
+   }
+  }
+ ]
+}

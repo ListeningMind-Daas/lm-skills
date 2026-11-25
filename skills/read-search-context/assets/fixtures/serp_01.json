@@ -1,0 +1,28 @@
+{
+ "result": "OK",
+ "collected_at": "2026-10-20T03:00:00Z",
+ "cost_detail": {
+  "total_cost": 30
+ },
+ "used_credits": 12100,
+ "data": [
+  {
+   "sequence": 2,
+   "type": "organic_results",
+   "position": 1,
+   "site_name": "예시 블로그",
+   "title": "경량 캠핑의자 무게 비교",
+   "url": "https://example.com/1",
+   "snippet": "1kg 안팎 의자 비교"
+  },
+  {
+   "sequence": 3,
+   "type": "organic_results",
+   "position": 2,
+   "site_name": "예시 쇼핑몰",
+   "title": "경량 체어",
+   "url": "https://example.com/2",
+   "snippet": "백패킹용 의자"
+  }
+ ]
+}

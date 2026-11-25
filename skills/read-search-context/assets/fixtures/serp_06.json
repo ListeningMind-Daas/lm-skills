@@ -1,0 +1,37 @@
+{
+ "result": "OK",
+ "collected_at": "2026-10-20T03:00:00Z",
+ "cost_detail": {
+  "total_cost": 30
+ },
+ "used_credits": 12100,
+ "data": [
+  {
+   "sequence": 2,
+   "type": "organic_results",
+   "position": 1,
+   "site_name": "예시 블로그",
+   "title": "캠핑의자 추천 순위",
+   "url": "https://example.com/1",
+   "snippet": "가성비와 경량 기준으로 정리"
+  },
+  {
+   "sequence": 3,
+   "type": "organic_results",
+   "position": 2,
+   "site_name": "예시 쇼핑몰",
+   "title": "캠핑의자 베스트",
+   "url": "https://example.com/2",
+   "snippet": "리뷰 많은 순"
+  },
+  {
+   "sequence": 4,
+   "type": "organic_results",
+   "position": 3,
+   "site_name": "예시 커뮤니티",
+   "title": "캠핑의자 뭐 쓰세요",
+   "url": "https://example.com/3",
+   "snippet": "브랜드별 사용 후기 댓글"
+  }
+ ]
+}

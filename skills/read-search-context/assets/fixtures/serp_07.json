@@ -1,0 +1,70 @@
+{
+ "result": "OK",
+ "collected_at": "2026-10-20T03:00:00Z",
+ "cost_detail": {
+  "total_cost": 30
+ },
+ "used_credits": 12100,
+ "data": [
+  {
+   "sequence": 1,
+   "type": "ai_overview",
+   "text_blocks": [
+    {
+     "type": "paragraph",
+     "snippet": "캠핑의자는 무게와 앉는 높이에 따라 경량 의자와 릴렉스체어로 나뉜다."
+    },
+    {
+     "type": "list",
+     "list": [
+      {
+       "snippet": "경량 의자: 백패킹과 이동이 잦은 캠핑에 쓴다.",
+       "list": [
+        {
+         "snippet": "수납 크기와 무게를 먼저 본다."
+        }
+       ]
+      },
+      {
+       "snippet": "릴렉스체어: 오토캠핑에서 오래 앉을 때 쓴다."
+      }
+     ]
+    }
+   ],
+   "references": [
+    {
+     "title": "캠핑의자 고르는 법",
+     "source": "예시 캠핑 매거진",
+     "url": "https://example.com/guide"
+    }
+   ]
+  },
+  {
+   "sequence": 2,
+   "type": "organic_results",
+   "position": 1,
+   "site_name": "예시 쇼핑몰",
+   "title": "캠핑의자 인기 상품 모음",
+   "url": "https://example.com/1",
+   "snippet": "가격대별 캠핑의자 1,200개 상품"
+  },
+  {
+   "sequence": 3,
+   "type": "organic_results",
+   "position": 2,
+   "site_name": "예시 캠핑 매거진",
+   "title": "캠핑의자 종류와 고르는 법",
+   "url": "https://example.com/2",
+   "snippet": "경량 · 릴렉스 · 로우 체어 비교"
+  },
+  {
+   "sequence": 4,
+   "type": "organic_results",
+   "position": 3,
+   "site_name": "예시 블로그",
+   "title": "캠핑의자 추천 7가지",
+   "url": "https://example.com/3",
+   "snippet": "직접 써 본 의자 후기"
+  }
+ ]
+}

@@ -1,0 +1,28 @@
+{
+ "result": "OK",
+ "collected_at": "2026-10-20T03:00:00Z",
+ "cost_detail": {
+  "total_cost": 30
+ },
+ "used_credits": 12100,
+ "data": [
+  {
+   "sequence": 2,
+   "type": "organic_results",
+   "position": 1,
+   "site_name": "예시 쇼핑몰",
+   "title": "접이식 의자",
+   "url": "https://example.com/1",
+   "snippet": "실내용과 야외용 접이식 의자"
+  },
+  {
+   "sequence": 3,
+   "type": "organic_results",
+   "position": 2,
+   "site_name": "예시 생활용품점",
+   "title": "접이식 의자 매장 상품",
+   "url": "https://example.com/2",
+   "snippet": "저가 접이식 의자"
+  }
+ ]
+}

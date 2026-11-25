@@ -1,0 +1,19 @@
+{
+ "result": "OK",
+ "collected_at": "2026-10-20T03:00:00Z",
+ "cost_detail": {
+  "total_cost": 30
+ },
+ "used_credits": 12100,
+ "data": [
+  {
+   "sequence": 2,
+   "type": "organic_results",
+   "position": 1,
+   "site_name": "예시 블로그",
+   "title": "릴렉스체어 추천",
+   "url": "https://example.com/1",
+   "snippet": "오토캠핑용 의자 5종"
+  }
+ ]
+}

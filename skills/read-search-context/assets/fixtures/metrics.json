@@ -1,0 +1,316 @@
+{
+ "result": "OK",
+ "request_detail": {
+  "keywords": [
+   "캠핑 용품",
+   "캠핑의자",
+   "캠핑의자 추천",
+   "경량 캠핑의자",
+   "헬리녹스 체어원",
+   "헬리녹스 체어원 가격",
+   "릴렉스체어",
+   "캠핑 의자",
+   "캠핑의자 순위",
+   "릴렉스체어 추천",
+   "콜맨 릴렉스체어",
+   "릴렉스 체어",
+   "릴렉스체어 세탁",
+   "차박 준비물",
+   "접이식 의자",
+   "다이소 접이식 의자",
+   "다이소 접이식 의자 5000원",
+   "캠핑 테이블",
+   "백패킹 장비",
+   "백패킹 의자",
+   "캠핑의자 수리"
+  ],
+  "gl": "kr",
+  "data_type": "ads_metrics"
+ },
+ "cost_detail": {
+  "total_cost": 21
+ },
+ "used_credits": 12021,
+ "data": [
+  {
+   "keyword": "캠핑의자",
+   "ads_metrics": {
+    "volume_avg": 74000,
+    "volume_total": 888000,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 13320,
+    "nv_volume_avg": 60680,
+    "gg_volume_total": 159840,
+    "nv_volume_total": 728160
+   }
+  },
+  {
+   "keyword": "캠핑 의자",
+   "ads_metrics": {
+    "volume_avg": 9900,
+    "volume_total": 118800,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 2970,
+    "nv_volume_avg": 6930,
+    "gg_volume_total": 35640,
+    "nv_volume_total": 83160
+   }
+  },
+  {
+   "keyword": "캠핑의자 추천",
+   "ads_metrics": {
+    "volume_avg": 12100,
+    "volume_total": 145200,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 3025,
+    "nv_volume_avg": 9075,
+    "gg_volume_total": 36300,
+    "nv_volume_total": 108900
+   }
+  },
+  {
+   "keyword": "경량 캠핑의자",
+   "ads_metrics": {
+    "volume_avg": 5400,
+    "volume_total": 64800,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 1080,
+    "nv_volume_avg": 4320,
+    "gg_volume_total": 12960,
+    "nv_volume_total": 51840
+   }
+  },
+  {
+   "keyword": "헬리녹스 체어원",
+   "ads_metrics": {
+    "volume_avg": 8100,
+    "volume_total": 97200,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 1620,
+    "nv_volume_avg": 6480,
+    "gg_volume_total": 19440,
+    "nv_volume_total": 77760
+   }
+  },
+  {
+   "keyword": "헬리녹스 체어원 가격",
+   "ads_metrics": {
+    "volume_avg": 720,
+    "volume_total": 8640,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 144,
+    "nv_volume_avg": 576,
+    "gg_volume_total": 1728,
+    "nv_volume_total": 6912
+   }
+  },
+  {
+   "keyword": "릴렉스체어",
+   "ads_metrics": {
+    "volume_avg": 22200,
+    "volume_total": 266400,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 2664,
+    "nv_volume_avg": 19536,
+    "gg_volume_total": 31968,
+    "nv_volume_total": 234432
+   }
+  },
+  {
+   "keyword": "릴렉스 체어",
+   "ads_metrics": {
+    "volume_avg": 2400,
+    "volume_total": 28800,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 480,
+    "nv_volume_avg": 1920,
+    "gg_volume_total": 5760,
+    "nv_volume_total": 23040
+   }
+  },
+  {
+   "keyword": "캠핑의자 순위",
+   "ads_metrics": {
+    "volume_avg": 880,
+    "volume_total": 10560,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 176,
+    "nv_volume_avg": 704,
+    "gg_volume_total": 2112,
+    "nv_volume_total": 8448
+   }
+  },
+  {
+   "keyword": "릴렉스체어 추천",
+   "ads_metrics": {
+    "volume_avg": 3600,
+    "volume_total": 43200,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 720,
+    "nv_volume_avg": 2880,
+    "gg_volume_total": 8640,
+    "nv_volume_total": 34560
+   }
+  },
+  {
+   "keyword": "콜맨 릴렉스체어",
+   "ads_metrics": {
+    "volume_avg": 1900,
+    "volume_total": 22800,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 380,
+    "nv_volume_avg": 1520,
+    "gg_volume_total": 4560,
+    "nv_volume_total": 18240
+   }
+  },
+  {
+   "keyword": "릴렉스체어 세탁",
+   "ads_metrics": {
+    "volume_avg": 210,
+    "volume_total": 2520,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 42,
+    "nv_volume_avg": 168,
+    "gg_volume_total": 504,
+    "nv_volume_total": 2016
+   }
+  },
+  {
+   "keyword": "차박 준비물",
+   "ads_metrics": {
+    "volume_avg": 14800,
+    "volume_total": 177600,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 2960,
+    "nv_volume_avg": 11840,
+    "gg_volume_total": 35520,
+    "nv_volume_total": 142080
+   }
+  },
+  {
+   "keyword": "접이식 의자",
+   "ads_metrics": {
+    "volume_avg": 18100,
+    "volume_total": 217200,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 7240,
+    "nv_volume_avg": 10860,
+    "gg_volume_total": 86880,
+    "nv_volume_total": 130320
+   }
+  },
+  {
+   "keyword": "다이소 접이식 의자",
+   "ads_metrics": {
+    "volume_avg": 2900,
+    "volume_total": 34800,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 580,
+    "nv_volume_avg": 2320,
+    "gg_volume_total": 6960,
+    "nv_volume_total": 27840
+   }
+  },
+  {
+   "keyword": "다이소 접이식 의자 5000원",
+   "ads_metrics": {
+    "volume_avg": 170,
+    "volume_total": 2040,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 34,
+    "nv_volume_avg": 136,
+    "gg_volume_total": 408,
+    "nv_volume_total": 1632
+   }
+  },
+  {
+   "keyword": "캠핑 테이블",
+   "ads_metrics": {
+    "volume_avg": 40500,
+    "volume_total": 486000,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 6075,
+    "nv_volume_avg": 34425,
+    "gg_volume_total": 72900,
+    "nv_volume_total": 413100
+   }
+  },
+  {
+   "keyword": "캠핑 용품",
+   "ads_metrics": {
+    "volume_avg": 33100,
+    "volume_total": 397200,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 6620,
+    "nv_volume_avg": 26480,
+    "gg_volume_total": 79440,
+    "nv_volume_total": 317760
+   }
+  },
+  {
+   "keyword": "백패킹 장비",
+   "ads_metrics": {
+    "volume_avg": 4400,
+    "volume_total": 52800,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 880,
+    "nv_volume_avg": 3520,
+    "gg_volume_total": 10560,
+    "nv_volume_total": 42240
+   }
+  },
+  {
+   "keyword": "백패킹 의자",
+   "ads_metrics": {
+    "volume_avg": 1600,
+    "volume_total": 19200,
+    "cpc": 0.4,
+    "competition": "HIGH",
+    "competition_index": 80,
+    "gg_volume_avg": 320,
+    "nv_volume_avg": 1280,
+    "gg_volume_total": 3840,
+    "nv_volume_total": 15360
+   }
+  }
+ ]
+}

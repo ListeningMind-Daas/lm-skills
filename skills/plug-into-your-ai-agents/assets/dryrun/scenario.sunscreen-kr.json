@@ -1,5 +1,5 @@
 {
- "note": "선크림(kr) · 예산 1,500 크레딧 · 운영 명세 기준 도구 9종. keyword_info·intent_finder·serp·trend·usage·keyword_list 2종은 합성 모의 응답(함정 포함, 수치 실측 아님), cluster_finder·path_finder는 2026-09-28 실측 응답 원문(used_credits만 가상값).",
+ "note": "선크림(kr) · 예산 1,500 크레딧 · 운영 명세 기준 도구 10종. keyword_info·intent_finder·serp·trend·usage·keyword_list 2종은 합성 모의 응답(함정 포함, 수치 실측 아님), cluster_finder·path_finder는 2026-09-28 실측 응답 원문(used_credits만 가상값).",
  "steps": [
   {
    "tool": "lm_keyword_info",
@@ -12,6 +12,15 @@
    },
    "expect": "blocked",
    "expect_reason": "two_stage"
+  },
+  {
+   "tool": "lm_keyword_info_monthly_volume",
+   "args": {
+    "keywords": [
+     "선크림"
+    ],
+    "gl": "kr"
+   }
   },
   {
    "tool": "lm_keyword_info",

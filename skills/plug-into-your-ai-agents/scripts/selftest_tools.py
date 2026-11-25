@@ -453,6 +453,40 @@ def main():
             for k, v in saved.items():
                 if v is not None:
                     os.environ[k] = v
+        # 7.1) 키를 보낼 호스트 — https 만 · expect_host 와 다르면 만들지 않는다 · 키를 출력하지 않는다
+        saved = {k: os.environ.pop(k, None) for k in ("LM_API_BASE", "LM_API_KEY")}
+        try:
+            os.environ["LM_API_KEY"] = "SELFTEST-NOT-A-REAL-KEY"
+            os.environ["LM_API_BASE"] = "http" + "://api.example.com"
+            try:
+                lm_tools.HttpTransport(announce=False)
+                fails.append(("보안", "https 가 아닌 주소로 전송이 만들어졌다 — 키가 암호화 없이 나갈 수 있다"))
+            except RuntimeError as e:
+                if "https" not in str(e):
+                    fails.append(("보안", f"https 거부 사유가 다르다: {e}"))
+            os.environ["LM_API_BASE"] = "https" + "://Api.Example.com/"
+            t = lm_tools.HttpTransport(expect_host="api.example.com", announce=False)
+            if t.host != "api.example.com":
+                fails.append(("보안", f"호스트를 대소문자 · 끝 / 와 무관하게 읽지 못한다: {t.host}"))
+            try:
+                lm_tools.HttpTransport(expect_host="other.example.net", announce=False)
+                fails.append(("보안", "expect_host 와 다른 호스트로 전송이 만들어졌다"))
+            except RuntimeError as e:
+                if "api.example.com" not in str(e) or "other.example.net" not in str(e):
+                    fails.append(("보안", f"호스트 불일치 메시지에 두 호스트가 없다: {e}"))
+            env = dict(os.environ, PYTHONIOENCODING="utf-8")
+            for args, want_rc, need in ((["host"], 0, "api.example.com"), (["host", "--expect", "other.example.net"], 1, "other.example.net")):
+                p = subprocess.run([sys.executable, str(HERE / "lm_tools.py"), *args], capture_output=True, text=True,
+                                   encoding="utf-8", errors="replace", env=env)
+                outp = p.stdout + p.stderr
+                if p.returncode != want_rc or need not in outp or "SELFTEST-NOT-A-REAL-KEY" in outp:
+                    fails.append(("보안", f"lm_tools.py {' '.join(args)}: 종료 {p.returncode}(기대 {want_rc}) · {outp.strip()[:160]}"))
+        finally:
+            for k in ("LM_API_BASE", "LM_API_KEY"):
+                os.environ.pop(k, None)
+            for k, v in saved.items():
+                if v is not None:
+                    os.environ[k] = v
         if re.search(r"https?://", (HERE / "lm_tools.py").read_text(encoding="utf-8")):
             fails.append(("보안", "lm_tools.py에 URL이 박혀 있다 — 주소는 LM_API_BASE로만"))
 
